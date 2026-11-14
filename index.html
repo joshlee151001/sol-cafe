@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>sol-cafe</title>
+<meta name="theme-color" content="#4A2C1D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="sol-cafe">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root {
+  --sun: #F5A524; --sun-deep: #D9840B; --sun-light: #FFF1D9;
+  --brown: #4A2C1D; --brown2: #6B4430; --cream: #FFF8EF; --card: #FFFFFF;
+  --text: #2B1A10; --sub: #8A7565; --line: #F0E4D6; --input: #F7EFE5;
+  --good: #1E9E5A; --bad: #E5484D; --hot: #E5484D; --ice: #2D8CE0;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif; background: var(--cream); color: var(--text); overscroll-behavior: none; -webkit-user-select: none; user-select: none; }
+button { font-family: inherit; border: none; background: none; color: inherit; cursor: pointer; }
+input, select { font-family: inherit; font-size: 16px; color: var(--text); -webkit-user-select: text; user-select: text; }
+.hidden { display: none !important; }
+.num { font-variant-numeric: tabular-nums; }
+.screen { position: fixed; inset: 0; display: flex; flex-direction: column; }
+.btn { height: 54px; border-radius: 16px; background: var(--sun); color: #fff; font-size: 17px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 18px; transition: transform 0.1s; }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.4; }
+.btn.brown { background: var(--brown); }
+.btn.ghost { background: var(--sun-light); color: var(--sun-deep); }
+.btn.gray { background: var(--input); color: var(--sub); }
+.btn.red { background: var(--bad); }
+.btn.green { background: var(--good); }
+.btn.block { width: 100%; }
+.field { height: 48px; border-radius: 12px; border: 2px solid var(--line); background: #fff; padding: 0 12px; outline: none; width: 100%; }
+.field:focus { border-color: var(--sun); }
+.hint { font-size: 13px; color: var(--sub); line-height: 1.6; }
+.msg { color: var(--bad); font-size: 13px; text-align: center; min-height: 18px; }
+.toast { position: fixed; left: 50%; top: calc(14px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 99; background: rgba(43,26,16,0.92); color: #fff; padding: 11px 18px; border-radius: 20px; font-size: 14px; font-weight: 700; max-width: 90%; text-align: center; pointer-events: none; }
+.toast.ok { background: var(--good); }
+.toast.err { background: var(--bad); }
+.overlay { position: fixed; inset: 0; z-index: 50; background: rgba(30,18,10,0.55); display: flex; align-items: flex-end; justify-content: center; }
+.overlay.center { align-items: center; padding: 18px; }
+.sheet { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; background: var(--card); border-radius: 26px 26px 0 0; padding: 20px 18px calc(18px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 12px; animation: up 0.22s ease-out; }
+.sheet > * { flex-shrink: 0; }
+.overlay.center .sheet { border-radius: 26px; max-width: 420px; }
+@keyframes up { from { transform: translateY(40px); opacity: 0.5; } }
+.sheet h3 { font-size: 20px; font-weight: 900; }
+.pic { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.pic svg, .pic img { width: 100%; height: 100%; object-fit: cover; }
+.pic .emo { line-height: 1; }
+
+/* ---------- 시작 화면 ---------- */
+#start { background: radial-gradient(circle at 50% 30%, #FFD27A 0%, #F5A524 45%, #D9840B 100%); color: #fff; align-items: center; text-align: center; gap: 14px; cursor: pointer; padding: calc(16px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom)); }
+.st-head { display: flex; align-items: center; gap: 10px; }
+.st-head .brand { font-size: 34px; }
+.ad-wrap { flex: 1; width: min(560px, 100%); position: relative; min-height: 0; }
+.ad { position: absolute; inset: 0; border-radius: 30px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 22px; opacity: 0; transform: scale(0.97); transition: opacity 0.7s, transform 0.7s; pointer-events: none; box-shadow: 0 14px 34px rgba(0,0,0,0.18); overflow: hidden; }
+.ad.on { opacity: 1; transform: scale(1); pointer-events: auto; }
+.ad .tag { font-size: 13px; font-weight: 900; background: rgba(255,255,255,0.28); padding: 5px 12px; border-radius: 12px; letter-spacing: 1px; }
+.ad .pic { width: min(56%, 34vh); aspect-ratio: 1; border-radius: 26px; background: rgba(255,255,255,0.3); }
+.ad .pic .emo { font-size: min(110px, 16vh); }
+.ad h2 { font-size: clamp(24px, 4.2vh, 36px); font-weight: 900; line-height: 1.25; word-break: keep-all; text-shadow: 0 2px 0 rgba(0,0,0,0.08); }
+.ad p { font-size: clamp(14px, 2.2vh, 18px); font-weight: 700; opacity: 0.95; word-break: keep-all; }
+.ad .go { font-size: 14px; font-weight: 900; background: #fff; color: var(--brown); padding: 9px 16px; border-radius: 16px; margin-top: 4px; }
+.ad-dots { display: flex; gap: 6px; justify-content: center; min-height: 8px; }
+.ad-dots i { width: 8px; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.45); transition: width 0.3s; }
+.ad-dots i.on { width: 22px; background: #fff; }
+.ad-empty { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.ad-empty .big { width: 150px; height: 150px; }
+.sun-logo { width: 64px; height: 64px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.brand { font-size: 54px; font-weight: 900; letter-spacing: -1.5px; text-shadow: 0 4px 0 rgba(0,0,0,0.12); }
+.brand small { display: block; font-size: 16px; letter-spacing: 4px; font-weight: 700; opacity: 0.9; margin-top: 2px; }
+.touch { font-size: 20px; font-weight: 800; background: rgba(255,255,255,0.22); padding: 14px 26px; border-radius: 30px; animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { transform: scale(1.06); background: rgba(255,255,255,0.32); } }
+.where { display: flex; gap: 14px; width: min(520px, 90vw); margin: auto 0; }
+.where button { flex: 1; height: 150px; border-radius: 26px; background: #fff; color: var(--brown); font-size: 22px; font-weight: 900; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 10px 24px rgba(0,0,0,0.15); transition: transform 0.1s; }
+.where button:active { transform: scale(0.96); }
+.where button span { font-size: 54px; }
+.start-admin { position: absolute; right: 14px; top: calc(14px + env(safe-area-inset-top)); width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.18); font-size: 17px; }
+
+/* ---------- 메뉴 ---------- */
+#menu { background: var(--cream); }
+.mtop { background: var(--brown); color: #fff; padding: calc(12px + env(safe-area-inset-top)) 16px 0; }
+.mtop-row { display: flex; align-items: center; gap: 10px; padding-bottom: 10px; }
+.mtop .logo { font-size: 22px; font-weight: 900; flex: 1; display: flex; align-items: center; gap: 8px; }
+.mtop .logo i { width: 28px; height: 28px; display: inline-block; }
+.mode-chip { font-size: 13px; font-weight: 800; background: rgba(255,255,255,0.16); padding: 6px 12px; border-radius: 12px; }
+.home-btn { height: 36px; padding: 0 12px; border-radius: 12px; background: rgba(255,255,255,0.12); font-size: 13px; font-weight: 800; }
+.cats { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.cats::-webkit-scrollbar { display: none; }
+.cats button { flex-shrink: 0; padding: 12px 16px 13px; font-size: 16px; font-weight: 800; color: rgba(255,255,255,0.6); border-radius: 14px 14px 0 0; }
+.cats button.on { background: var(--cream); color: var(--brown); }
+.grid-wrap { flex: 1; overflow-y: auto; padding: 14px 14px 20px; }
+.mgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (min-width: 600px) { .mgrid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 900px) { .mgrid { grid-template-columns: repeat(4, 1fr); } }
+.mcard { background: var(--card); border-radius: 20px; padding: 10px 10px 12px; text-align: left; box-shadow: 0 4px 14px rgba(74,44,29,0.07); display: flex; flex-direction: column; gap: 6px; position: relative; transition: transform 0.1s; }
+.mcard:active { transform: scale(0.96); }
+.mcard .pic { aspect-ratio: 1; border-radius: 14px; background: var(--sun-light); }
+.mcard .pic .emo { font-size: 64px; }
+.mcard .nm { font-size: 15px; font-weight: 800; line-height: 1.3; word-break: keep-all; padding: 0 2px; }
+.mcard .pr { font-size: 15px; font-weight: 900; color: var(--sun-deep); padding: 0 2px; }
+.mcard .tags { position: absolute; top: 14px; left: 14px; display: flex; gap: 4px; }
+.mcard .tag { font-size: 10px; font-weight: 900; padding: 3px 6px; border-radius: 7px; color: #fff; }
+.mcard.sold { pointer-events: none; }
+.mcard.sold .pic { filter: grayscale(1); opacity: 0.5; }
+.mcard.sold::after { content: "품절"; position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%) rotate(-12deg); border: 3px solid var(--bad); color: var(--bad); background: rgba(255,255,255,0.9); font-size: 20px; font-weight: 900; padding: 4px 14px; border-radius: 10px; }
+.cartbar { background: var(--card); box-shadow: 0 -6px 20px rgba(74,44,29,0.1); padding: 12px 14px calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 10px; max-height: 46vh; }
+.cart-list { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.citem { display: flex; align-items: center; gap: 10px; background: var(--input); border-radius: 14px; padding: 8px 10px; }
+.citem .pic { width: 44px; height: 44px; border-radius: 10px; background: #fff; flex-shrink: 0; }
+.citem .pic .emo { font-size: 28px; }
+.citem .txt { flex: 1; min-width: 0; }
+.citem .txt b { display: block; font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.citem .txt span { font-size: 11px; color: var(--sub); }
+.qty { display: flex; align-items: center; gap: 4px; }
+.qty button { width: 30px; height: 30px; border-radius: 9px; background: #fff; font-size: 17px; font-weight: 900; }
+.qty b { min-width: 22px; text-align: center; font-weight: 900; }
+.citem .cp { font-size: 14px; font-weight: 900; min-width: 64px; text-align: right; }
+.cart-foot { display: flex; align-items: center; gap: 10px; }
+.cart-foot .sum { flex: 1; }
+.cart-foot .sum span { font-size: 12px; color: var(--sub); font-weight: 700; }
+.cart-foot .sum b { display: block; font-size: 24px; font-weight: 900; }
+.cart-foot .btn { height: 58px; min-width: 150px; font-size: 18px; }
+.cart-empty { text-align: center; color: var(--sub); font-size: 14px; padding: 6px; }
+
+/* 옵션 창 */
+.opt-top { display: flex; gap: 14px; align-items: center; }
+.opt-top .pic { width: 104px; height: 104px; border-radius: 20px; background: var(--sun-light); flex-shrink: 0; }
+.opt-top .pic .emo { font-size: 62px; }
+.opt-top b { display: block; font-size: 22px; font-weight: 900; }
+.opt-top span { font-size: 17px; font-weight: 900; color: var(--sun-deep); }
+.opt-sec { display: flex; flex-direction: column; gap: 8px; }
+.opt-sec h4 { font-size: 14px; font-weight: 800; color: var(--sub); }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { flex: 1; min-width: 90px; height: 50px; border-radius: 14px; border: 2.5px solid var(--line); background: #fff; font-size: 15px; font-weight: 800; color: var(--text); }
+.chip small { display: block; font-size: 11px; color: var(--sub); font-weight: 700; }
+.chip.on { border-color: var(--sun); background: var(--sun-light); color: var(--sun-deep); }
+.chip.hot.on { border-color: var(--hot); background: #FFECEC; color: var(--hot); }
+.chip.ice.on { border-color: var(--ice); background: #EAF4FD; color: var(--ice); }
+.opt-foot { display: flex; align-items: center; gap: 10px; position: sticky; bottom: -18px; background: #fff; padding: 10px 0 4px; }
+
+/* 결제 */
+.pay-box { text-align: center; display: flex; flex-direction: column; gap: 14px; align-items: center; }
+.pay-total { font-size: 38px; font-weight: 900; color: var(--brown); }
+.pay-ways { display: flex; gap: 10px; width: 100%; }
+.pay-ways button { flex: 1; height: 110px; border-radius: 20px; background: var(--input); font-size: 16px; font-weight: 900; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 2.5px solid transparent; }
+.pay-ways button span { font-size: 40px; }
+.reader { width: 190px; height: 210px; position: relative; margin: 6px auto; }
+.reader .slot { position: absolute; left: 20px; right: 20px; bottom: 0; height: 120px; background: #3A3F47; border-radius: 16px; }
+.reader .slot::before { content: ""; position: absolute; left: 22px; right: 22px; top: 14px; height: 10px; border-radius: 5px; background: #16191D; }
+.reader .light { position: absolute; right: 36px; bottom: 30px; width: 14px; height: 14px; border-radius: 50%; background: #666; }
+.reader .light.on { background: #22C55E; box-shadow: 0 0 12px #22C55E; }
+.reader .card { position: absolute; left: 50%; width: 120px; height: 76px; margin-left: -60px; top: -10px; border-radius: 10px; background: linear-gradient(135deg, #F5A524, #D9840B); box-shadow: 0 6px 14px rgba(0,0,0,0.25); animation: insert 1.3s ease-in-out forwards; }
+.reader .card::before { content: ""; position: absolute; left: 14px; top: 22px; width: 22px; height: 16px; border-radius: 4px; background: #FFE08A; }
+.reader .card::after { content: "SOL CARD"; position: absolute; right: 10px; bottom: 8px; font-size: 10px; font-weight: 900; color: rgba(255,255,255,0.9); letter-spacing: 1px; }
+@keyframes insert { 60% { top: 82px; } 100% { top: 82px; } }
+.phone-pay { font-size: 90px; animation: tap 1.2s ease-in-out infinite; }
+@keyframes tap { 50% { transform: translateY(14px) rotate(-6deg); } }
+.spinner { width: 46px; height: 46px; border-radius: 50%; border: 5px solid var(--line); border-top-color: var(--sun); animation: spin 0.8s linear infinite; }
+
+/* 주문 완료 */
+#done { background: var(--brown); color: #fff; align-items: center; justify-content: center; text-align: center; padding: 20px; gap: 14px; }
+.done-check { width: 86px; height: 86px; border-radius: 50%; background: var(--good); display: flex; align-items: center; justify-content: center; font-size: 46px; animation: popin 0.4s ease-out; }
+@keyframes popin { from { transform: scale(0.3); opacity: 0; } }
+.done-no { font-size: 20px; font-weight: 800; opacity: 0.9; }
+.done-no b { display: block; font-size: 96px; font-weight: 900; color: var(--sun); line-height: 1.05; letter-spacing: -3px; }
+.receipt { background: #fff; color: var(--text); width: min(340px, 90vw); border-radius: 6px; padding: 16px 16px 20px; text-align: left; font-size: 13px; position: relative; animation: print 0.9s ease-out; max-height: 34vh; overflow-y: auto; }
+.receipt::after { content: ""; position: absolute; left: 0; right: 0; bottom: -8px; height: 8px; background: radial-gradient(circle at 6px 0, #fff 6px, transparent 6px) repeat-x; background-size: 12px 8px; }
+@keyframes print { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
+.receipt .rh { text-align: center; font-weight: 900; font-size: 16px; margin-bottom: 4px; }
+.receipt .rl { display: flex; justify-content: space-between; gap: 8px; padding: 3px 0; }
+.receipt .ro { font-size: 11px; color: var(--sub); margin: -2px 0 4px; }
+.receipt hr { border: none; border-top: 1.5px dashed #ccc; margin: 8px 0; }
+.done-count { font-size: 14px; opacity: 0.7; }
+
+/* ---------- 바리스타 ---------- */
+#barista { background: #2A1A10; color: #fff; }
+.b-top { display: flex; align-items: center; gap: 10px; padding: calc(12px + env(safe-area-inset-top)) 16px 12px; }
+.b-top h1 { font-size: 20px; font-weight: 900; flex: 1; }
+.b-top .tb { height: 38px; padding: 0 12px; border-radius: 12px; background: rgba(255,255,255,0.12); font-size: 13px; font-weight: 800; }
+.b-top .tb.on { background: var(--sun); }
+.b-cols { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 12px 12px; overflow: hidden; }
+@media (max-width: 720px) { .b-cols { grid-template-columns: 1fr; overflow-y: auto; } }
+.b-col { background: rgba(255,255,255,0.06); border-radius: 18px; padding: 10px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 120px; }
+.b-col h2 { font-size: 15px; font-weight: 900; display: flex; align-items: center; gap: 6px; padding: 4px 4px 2px; }
+.b-col h2 span { background: rgba(255,255,255,0.15); border-radius: 9px; padding: 1px 8px; font-size: 13px; }
+.ocard { background: #fff; color: var(--text); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 8px; animation: popin 0.3s ease-out; }
+.ocard.new { box-shadow: 0 0 0 3px var(--sun); }
+.ocard .oh { display: flex; align-items: center; gap: 8px; }
+.ocard .ono { font-size: 28px; font-weight: 900; color: var(--brown); }
+.ocard .omode { font-size: 12px; font-weight: 900; padding: 3px 8px; border-radius: 8px; background: var(--sun-light); color: var(--sun-deep); }
+.ocard .otime { margin-left: auto; font-size: 12px; color: var(--sub); font-weight: 700; }
+.ocard .otime.late { color: var(--bad); }
+.ocard .oit { font-size: 15px; font-weight: 800; }
+.ocard .oit small { display: block; font-size: 12px; color: var(--sub); font-weight: 700; }
+.ocard .oit .t { display: inline-block; font-size: 11px; font-weight: 900; color: #fff; padding: 1px 6px; border-radius: 6px; margin-right: 4px; vertical-align: 2px; }
+.ocard .btn { height: 46px; font-size: 15px; }
+.b-empty { color: rgba(255,255,255,0.4); text-align: center; font-size: 13px; padding: 20px 6px; }
+
+/* ---------- 픽업 전광판 ---------- */
+#board { background: #120B06; color: #fff; }
+.bd-top { display: flex; align-items: center; justify-content: space-between; padding: calc(16px + env(safe-area-inset-top)) 24px 10px; }
+.bd-top .logo { font-size: 26px; font-weight: 900; display: flex; align-items: center; gap: 10px; }
+.bd-top .logo i { width: 36px; height: 36px; display: inline-block; }
+.bd-top .clock { font-size: 22px; font-weight: 800; opacity: 0.8; }
+.bd-cols { flex: 1; display: grid; grid-template-columns: 1fr 1.3fr; gap: 16px; padding: 8px 20px 20px; }
+.bd-col { border-radius: 24px; padding: 18px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.bd-col.wait { background: rgba(255,255,255,0.06); }
+.bd-col.ready { background: linear-gradient(160deg, #F5A524, #D9840B); }
+.bd-col h2 { font-size: clamp(18px, 3vw, 28px); font-weight: 900; }
+.bd-nums { display: flex; flex-wrap: wrap; gap: 10px; align-content: flex-start; }
+.bd-nums div { min-width: 23%; flex: 0 0 auto; text-align: center; font-size: clamp(30px, 6vw, 64px); font-weight: 900; padding: 6px 12px; border-radius: 16px; font-variant-numeric: tabular-nums; }
+.bd-col.wait .bd-nums div { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+.bd-col.ready .bd-nums div { background: rgba(255,255,255,0.95); color: var(--brown); animation: popin 0.4s ease-out; }
+.bd-call { position: fixed; inset: 0; z-index: 60; background: rgba(18,11,6,0.92); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; animation: popin 0.3s ease-out; }
+.bd-call .bell { font-size: 80px; animation: ring 0.5s ease-in-out 4; }
+@keyframes ring { 25% { transform: rotate(18deg); } 75% { transform: rotate(-18deg); } }
+.bd-call b { font-size: clamp(90px, 22vw, 220px); font-weight: 900; color: var(--sun); line-height: 1; letter-spacing: -4px; }
+.bd-call p { font-size: clamp(20px, 4vw, 38px); font-weight: 800; }
+.sound-gate { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,0.75); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 20px; }
+.sound-gate b { font-size: 24px; }
+
+/* ---------- 관리자 ---------- */
+#admin { background: var(--cream); }
+.a-top { background: var(--brown); color: #fff; padding: calc(12px + env(safe-area-inset-top)) 14px 0; }
+.a-top-row { display: flex; align-items: center; gap: 10px; padding-bottom: 8px; }
+.a-top h1 { font-size: 20px; font-weight: 900; flex: 1; }
+.a-body { flex: 1; overflow-y: auto; padding: 14px 14px calc(30px + env(safe-area-inset-bottom)); }
+.a-wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+.arow { background: var(--card); border-radius: 16px; padding: 10px; display: flex; align-items: center; gap: 10px; }
+.arow .pic { width: 54px; height: 54px; border-radius: 12px; background: var(--sun-light); flex-shrink: 0; }
+.arow .pic .emo { font-size: 32px; }
+.arow .txt { flex: 1; min-width: 0; }
+.arow .txt b { display: block; font-size: 15px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.arow .txt span { font-size: 12px; color: var(--sub); }
+.mini { height: 34px; min-width: 34px; padding: 0 8px; border-radius: 10px; background: var(--input); font-size: 13px; font-weight: 800; color: var(--brown2); }
+.mini.red { background: #FDECEC; color: var(--bad); }
+.mini.on { background: var(--bad); color: #fff; }
+.sec-title { font-size: 14px; font-weight: 900; color: var(--sub); margin: 8px 2px 0; }
+.stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--card); border-radius: 16px; padding: 14px 10px; text-align: center; }
+.stat b { display: block; font-size: 22px; font-weight: 900; color: var(--brown); }
+.stat span { font-size: 12px; color: var(--sub); font-weight: 800; }
+.bar-row { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; }
+.bar-row .bn { width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bar-row .bb { flex: 1; height: 14px; background: var(--input); border-radius: 7px; overflow: hidden; }
+.bar-row .bb div { height: 100%; background: var(--sun); border-radius: 7px; }
+.bar-row .bv { width: 40px; text-align: right; }
+.img-tabs { display: flex; gap: 6px; }
+.img-tabs button { flex: 1; height: 40px; border-radius: 12px; background: var(--input); font-size: 14px; font-weight: 800; color: var(--sub); }
+.img-tabs button.on { background: var(--brown); color: #fff; }
+.gallery { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.gallery button { aspect-ratio: 1; border-radius: 12px; background: var(--sun-light); border: 2.5px solid transparent; padding: 3px; }
+.gallery button.on { border-color: var(--sun); }
+.gallery button .emo { font-size: 28px; }
+.emoji-grid button { font-size: 28px; }
+.form-row { display: flex; gap: 8px; align-items: center; }
+.form-row label { font-size: 13px; font-weight: 800; color: var(--sub); width: 64px; flex-shrink: 0; }
+.checks { display: flex; flex-wrap: wrap; gap: 6px; }
+.checks button { height: 38px; padding: 0 12px; border-radius: 12px; background: var(--input); font-size: 13px; font-weight: 800; color: var(--sub); }
+.checks button.on { background: var(--sun); color: #fff; }
+.link-box { background: var(--card); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.link-box code { font-size: 12px; background: var(--input); padding: 8px; border-radius: 8px; word-break: break-all; -webkit-user-select: all; user-select: all; }
+</style>
+</head>
+<body>
+
+<!-- ===== 키오스크: 시작 ===== -->
+<section id="start" class="screen hidden">
+  <div class="st-head"><div class="sun-logo" id="start-logo"></div><div class="brand">sol-cafe</div></div>
+  <div class="ad-wrap" id="ad-wrap"></div>
+  <div class="ad-dots" id="ad-dots"></div>
+  <div class="where hidden" id="where">
+    <button type="button" data-mode="매장"><span>🏠</span>매장에서 먹어요</button>
+    <button type="button" data-mode="포장"><span>🛍️</span>포장해 갈게요</button>
+  </div>
+  <div class="touch" id="touch-msg">👆 주문하시려면 화면을 터치하세요</div>
+  <button class="start-admin" id="start-admin" type="button" aria-label="관리자">⚙️</button>
+</section>
+
+<!-- ===== 키오스크: 메뉴 ===== -->
+<section id="menu" class="screen hidden">
+  <div class="mtop">
+    <div class="mtop-row"><div class="logo"><i id="menu-logo"></i>sol-cafe</div><span class="mode-chip" id="mode-chip"></span><button class="home-btn" id="btn-home" type="button">처음으로</button></div>
+    <div class="cats" id="cats"></div>
+  </div>
+  <div class="grid-wrap"><div class="mgrid" id="mgrid"></div></div>
+  <div class="cartbar">
+    <div class="cart-list" id="cart-list"></div>
+    <div class="cart-foot">
+      <div class="sum"><span id="cart-count">담은 메뉴 0개</span><b class="num" id="cart-total">0원</b></div>
+      <button class="btn" id="btn-pay" type="button" disabled>결제하기</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 키오스크: 주문 완료 ===== -->
+<section id="done" class="screen hidden">
+  <div class="done-check">✓</div>
+  <div class="done-no">주문 번호<b id="done-no">0</b></div>
+  <div style="font-size:16px;font-weight:700;opacity:0.9">음료가 준비되면 전광판에 번호가 떠요 📺</div>
+  <div class="receipt" id="receipt"></div>
+  <button class="btn" id="done-ok" type="button" style="min-width:200px">확인</button>
+  <div class="done-count" id="done-count"></div>
+</section>
+
+<!-- ===== 바리스타 ===== -->
+<section id="barista" class="screen hidden">
+  <div class="b-top"><h1>☕ 바리스타 · 주문 받기</h1><button class="tb" id="b-sound" type="button">🔔 소리 켜기</button><button class="tb" id="b-menu" type="button">⚙️ 관리</button></div>
+  <div class="b-cols">
+    <div class="b-col"><h2>🆕 새 주문 <span id="c-new">0</span></h2><div id="col-new"></div></div>
+    <div class="b-col"><h2>🔥 만드는 중 <span id="c-making">0</span></h2><div id="col-making"></div></div>
+    <div class="b-col"><h2>✅ 픽업 대기 <span id="c-done">0</span></h2><div id="col-done"></div></div>
+  </div>
+</section>
+
+<!-- ===== 픽업 전광판 ===== -->
+<section id="board" class="screen hidden">
+  <div class="bd-top"><div class="logo"><i id="board-logo"></i>sol-cafe</div><div class="clock num" id="bd-clock"></div></div>
+  <div class="bd-cols">
+    <div class="bd-col wait"><h2>☕ 준비 중이에요</h2><div class="bd-nums" id="bd-wait"></div></div>
+    <div class="bd-col ready"><h2>🔔 픽업해 주세요!</h2><div class="bd-nums" id="bd-ready"></div></div>
+  </div>
+</section>
+
+<!-- ===== 관리자 ===== -->
+<section id="admin" class="screen hidden">
+  <div class="a-top">
+    <div class="a-top-row"><h1>⚙️ sol-cafe 관리자</h1><button class="home-btn" id="a-exit" type="button">나가기</button></div>
+    <div class="cats" id="a-tabs">
+      <button data-t="menu" class="on" type="button">📋 메뉴</button>
+      <button data-t="cats" type="button">🗂️ 카테고리</button>
+      <button data-t="opts" type="button">🎛️ 옵션</button>
+      <button data-t="ads" type="button">📢 광고</button>
+      <button data-t="sales" type="button">💰 매출</button>
+      <button data-t="set" type="button">🔧 설정</button>
+    </div>
+  </div>
+  <div class="a-body"><div class="a-wrap" id="a-body"></div></div>
+</section>
+
+<div id="overlay" class="overlay hidden"><div id="sheet" class="sheet"></div></div>
+<div id="toast" class="toast hidden"></div>
+
+<!-- Firebase (온챗 프로젝트의 Realtime Database "solcafe" 칸, 로그인 없음) -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+import { getDatabase, ref, set, update, push, onValue, runTransaction } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
+try {
+  const app = initializeApp({
+    apiKey: "AIzaSyDtaB6Me_uGpgZaW6ca4p6NVk_TEbxO6IA",
+    authDomain: "onchat-fc78e.firebaseapp.com",
+    databaseURL: "https://onchat-fc78e-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "onchat-fc78e",
+    appId: "1:939252436157:web:d8a55283aa9c17fa6e3bd4",
+  });
+  const db = getDatabase(app);
+  const R = (p) => ref(db, "solcafe/" + p);
+  window.scRemote = {
+    put: (p, v) => set(R(p), v),
+    patch: (p, v) => update(R(p), v),
+    add: (p, v) => push(R(p), v).then((r) => r.key),
+    listen: (p, cb) => onValue(R(p), (s) => cb(s.val()), () => cb(undefined)),
+    nextNo: (today) => runTransaction(R("counter"), (c) => (!c || c.date !== today ? { date: today, n: 1 } : { date: today, n: c.n + 1 })).then((r) => r.snapshot.val().n),
+  };
+  window.dispatchEvent(new Event("scremote-ready"));
+} catch (e) { console.warn("서버 연결 실패", e); }
+</script>
+
+<script>
+"use strict";
+/* =====================================================================
+   sol-cafe : 커피숍 키오스크 (놀이용)
+   - 기본 화면       : 키오스크 (매장/포장 → 메뉴 → 옵션 → 결제 → 주문 번호)
+   - ?barista        : 바리스타 화면 (새 주문 → 만드는 중 → 픽업 대기)
+   - ?board          : 픽업 전광판 (번호 부르기 + 안내 방송)
+   - ⚙️ (비밀번호)   : 관리자 (메뉴 · 품절 · 매출 · 비밀번호)
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+const won = (n) => Math.round(n).toLocaleString("ko-KR") + "원";
+const pad = (n) => String(n).padStart(2, "0");
+const nowMs = () => (window.__fakeNow ? window.__fakeNow() : Date.now());
+function kstDate(ms = nowMs()) { const d = new Date(ms + 9 * 3600e3); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`; }
+function hm(ms) { const d = new Date(ms + 9 * 3600e3); return `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; }
+const DEFAULT_PIN_HASH = "31907b8a38e74379c209cf9902a7568225649ffa0740322f0cd667c3c54597cd"; // 처음 비밀번호 (코드에는 해시만)
+// 기본 카테고리 · 옵션 · 광고 (관리자 화면에서 마음대로 바꿀 수 있어요)
+const DEF_CATS = { coffee: { name: "커피", icon: "☕", order: 0 }, latte: { name: "라떼", icon: "🥛", order: 1 }, tea: { name: "티", icon: "🍵", order: 2 }, ade: { name: "에이드·스무디", icon: "🍹", order: 3 }, dessert: { name: "디저트", icon: "🍰", order: 4 } };
+// 옵션 묶음: multi=여러 개 고르기 / 하나만 고르기(def=기본), iceOnly=ICE 고를 때만 보여요
+const DEF_GROUPS = {
+  size: { name: "사이즈", multi: false, def: 0, order: 0, choices: [{ n: "톨", p: 0 }, { n: "그란데", p: 500 }] },
+  ice: { name: "얼음", multi: false, def: 1, iceOnly: true, order: 1, choices: [{ n: "얼음 적게", p: 0 }, { n: "얼음 보통", p: 0 }, { n: "얼음 많이", p: 0 }] },
+  shot: { name: "샷", multi: false, def: 0, order: 2, choices: [{ n: "기본", p: 0 }, { n: "1샷 추가", p: 500 }, { n: "2샷 추가", p: 1000 }] },
+  syrup: { name: "시럽 추가", multi: true, order: 3, choices: [{ n: "바닐라 시럽", p: 300 }, { n: "헤이즐넛 시럽", p: 300 }, { n: "카라멜 시럽", p: 300 }] },
+  cream: { name: "휘핑", multi: false, def: 0, order: 4, choices: [{ n: "없음", p: 0 }, { n: "휘핑 추가", p: 500 }] },
+};
+const SITE = location.origin + location.pathname;
+
+let toastTimer = null;
+function toast(t, k = "") { const x = $("toast"); x.textContent = t; x.className = "toast " + k; clearTimeout(toastTimer); toastTimer = setTimeout(() => x.classList.add("hidden"), 2300); }
+function openSheet(build, center = false) { $("sheet").replaceChildren(); build($("sheet")); $("overlay").classList.toggle("center", center); $("overlay").classList.remove("hidden"); }
+function closeSheet() { $("overlay").classList.add("hidden"); }
+$("overlay").addEventListener("click", (e) => { if (e.target === $("overlay") && !payBusy) closeSheet(); });
+function show(id) { for (const s of ["start", "menu", "done", "barista", "board", "admin"]) $(s).classList.toggle("hidden", s !== id); }
+async function sha(t) { const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, "0")).join(""); }
+const pinHash = (p) => sha("solcafe:" + p);
+
+/* =====================================================================
+   그림 (직접 그린 메뉴 그림) : 음료는 HOT 머그 / ICE 컵이 자동으로 바뀌어요
+   ===================================================================== */
+const DRINKS = {
+  americano: { name: "아메리카노", c: "#3B2416" },
+  espresso: { name: "에스프레소", c: "#2A170C", small: true },
+  coldbrew: { name: "콜드브루", c: "#24140A" },
+  latte: { name: "라떼", c: "#C79A6B", top: "foam" },
+  vanilla: { name: "바닐라라떼", c: "#E3C38F", top: "foam" },
+  caramel: { name: "카라멜", c: "#C98A3E", top: "drizzle" },
+  choco: { name: "초코", c: "#6B3A22", top: "cream" },
+  greentea: { name: "녹차라떼", c: "#8DBF5A", top: "foam" },
+  tea: { name: "티", c: "#D99A3C" },
+  yuja: { name: "유자차", c: "#F2B632", top: "slice" },
+  icedtea: { name: "아이스티", c: "#C2601E", top: "lemon" },
+  lemon: { name: "레몬에이드", c: "#F6E27A", top: "lemon" },
+  grapefruit: { name: "자몽에이드", c: "#F07A68", top: "grapefruit" },
+  strawberry: { name: "딸기스무디", c: "#F06A86", top: "berry", thick: true },
+  mango: { name: "망고스무디", c: "#FFB52E", top: "cream", thick: true },
+  blue: { name: "블루레몬", c: "#4FA8E8", top: "lemon" },
+};
+const FOODS = {
+  cheesecake: "치즈케이크", chococake: "초코케이크", croissant: "크루아상", cookie: "쿠키",
+  macaron: "마카롱", muffin: "머핀", bagel: "베이글", sandwich: "샌드위치",
+};
+function drinkSVG(key, temp) {
+  const d = DRINKS[key] || DRINKS.americano;
+  if (temp === "hot" || (temp !== "ice" && d.small)) {
+    // 머그컵
+    const h = d.small ? 70 : 110, y = 175 - h;
+    let top = "";
+    if (d.top === "foam" || d.top === "cream") top = `<ellipse cx="100" cy="${y + 4}" rx="58" ry="12" fill="#F6EBDD"/><path d="M80 ${y + 4} q20 -12 40 0 q-20 10 -40 0z" fill="${d.c}" opacity="0.6"/>`;
+    if (d.top === "drizzle") top = `<ellipse cx="100" cy="${y + 4}" rx="58" ry="12" fill="#F6EBDD"/><path d="M60 ${y + 2} l15 6 l15 -6 l15 6 l15 -6 l15 6 l15 -6" stroke="#B5731F" stroke-width="4" fill="none"/>`;
+    if (d.top === "slice") top = `<circle cx="100" cy="${y + 4}" r="14" fill="#FFD84D" stroke="#F2A900" stroke-width="3"/>`;
+    return `<svg viewBox="0 0 200 200"><ellipse cx="100" cy="186" rx="76" ry="9" fill="#000" opacity="0.08"/>
+      <ellipse cx="100" cy="182" rx="78" ry="10" fill="#E9DCCB"/>
+      <path d="M150 ${y + 26} q34 0 34 28 q0 28 -34 28" stroke="#fff" stroke-width="12" fill="none"/><path d="M150 ${y + 26} q34 0 34 28 q0 28 -34 28" stroke="#E9DCCB" stroke-width="4" fill="none"/>
+      <path d="M38 ${y - 4} L162 ${y - 4} L152 176 Q100 186 48 176 Z" fill="#fff" stroke="#E9DCCB" stroke-width="3"/>
+      <ellipse cx="100" cy="${y + 4}" rx="58" ry="12" fill="${d.c}"/>${top}
+      <path d="M85 ${y - 20} q-8 -12 0 -24 q8 -12 0 -24" stroke="#D8CBBB" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8"/>
+      <path d="M115 ${y - 16} q-8 -12 0 -24 q8 -12 0 -24" stroke="#D8CBBB" stroke-width="5" fill="none" stroke-linecap="round" opacity="0.8"/></svg>`;
+  }
+  // 아이스 컵
+  const fill = d.thick ? `<path d="M52 70 L148 70 L138 182 Q100 190 62 182 Z" fill="${d.c}"/>`
+    : `<path d="M54 82 L146 82 L138 182 Q100 190 62 182 Z" fill="${d.c}" opacity="0.92"/>`;
+  const ice = d.thick ? "" : `<g fill="#fff" opacity="0.55"><rect x="66" y="88" width="26" height="24" rx="5" transform="rotate(-12 79 100)"/><rect x="104" y="96" width="26" height="24" rx="5" transform="rotate(10 117 108)"/><rect x="80" y="124" width="24" height="22" rx="5" transform="rotate(6 92 135)"/></g>`;
+  let top = "";
+  if (d.top === "foam") top = `<path d="M52 78 L148 78 L146 96 L54 96 Z" fill="#F6EBDD" opacity="0.95"/>`;
+  if (d.top === "cream") top = `<path d="M50 72 q10 -26 30 -22 q8 -20 24 -16 q16 -14 28 4 q22 2 18 34 Z" fill="#FFF8EE"/><path d="M70 58 q12 -6 22 2 M104 50 q12 -6 22 4" stroke="#EADCC8" stroke-width="3" fill="none"/>`;
+  if (d.top === "drizzle") top = `<path d="M50 72 q10 -26 30 -22 q8 -20 24 -16 q16 -14 28 4 q22 2 18 34 Z" fill="#FFF8EE"/><path d="M62 60 l14 8 l14 -10 l14 10 l14 -10 l14 8" stroke="#B5731F" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+  if (d.top === "lemon") top = `<circle cx="142" cy="78" r="20" fill="#FFE45C" stroke="#F2C400" stroke-width="4"/><path d="M142 60 v36 M124 78 h36 M129 65 l26 26 M155 65 l-26 26" stroke="#F2C400" stroke-width="2"/>`;
+  if (d.top === "grapefruit") top = `<circle cx="142" cy="78" r="20" fill="#FF8A78" stroke="#F2C400" stroke-width="4"/><path d="M142 60 v36 M124 78 h36" stroke="#FFD0C8" stroke-width="2"/>`;
+  if (d.top === "berry") top = `<path d="M128 56 q14 -6 22 6 q4 14 -10 26 q-18 -10 -12 -32z" fill="#E5304F"/><path d="M134 54 l6 -10 l6 10" fill="#3FAE4F"/><g fill="#FFE08A"><circle cx="138" cy="66" r="1.8"/><circle cx="144" cy="72" r="1.8"/></g>`;
+  return `<svg viewBox="0 0 200 200"><ellipse cx="100" cy="188" rx="58" ry="8" fill="#000" opacity="0.08"/>
+    <rect x="112" y="14" width="10" height="90" rx="4" fill="${d.thick ? "#F5A524" : "#2D3A4A"}" transform="rotate(12 117 59)"/>
+    ${fill}${ice}${top}
+    <path d="M44 66 L156 66 L144 184 Q100 194 56 184 Z" fill="#fff" opacity="0.18" stroke="#DCE8F2" stroke-width="4"/>
+    <rect x="40" y="58" width="120" height="12" rx="6" fill="#EEF3F8"/><path d="M66 90 L72 170" stroke="#fff" stroke-width="6" opacity="0.45" stroke-linecap="round"/></svg>`;
+}
+function foodSVG(key) {
+  const sh = `<ellipse cx="100" cy="176" rx="74" ry="10" fill="#000" opacity="0.08"/>`;
+  const plate = `<ellipse cx="100" cy="166" rx="82" ry="18" fill="#fff" stroke="#EADFD2" stroke-width="3"/>`;
+  const art = {
+    cheesecake: `<path d="M40 150 L160 150 L160 112 L40 92 Z" fill="#FFE7A8"/><path d="M40 92 L160 112 L160 100 L40 80 Z" fill="#FFF3CF"/><path d="M40 150 L160 150 L160 160 L40 160 Z" fill="#C98A4B"/><path d="M60 84 q10 -14 22 -4 q4 10 -8 14 q-12 2 -14 -10z" fill="#E5304F"/>`,
+    chococake: `<path d="M40 150 L160 150 L160 104 L40 84 Z" fill="#6B3A22"/><path d="M40 118 L160 132 L160 124 L40 110 Z" fill="#F6EBDD"/><path d="M40 84 L160 104 L160 94 L40 74 Z" fill="#4A2416"/><circle cx="72" cy="70" r="10" fill="#E5304F"/>`,
+    croissant: `<path d="M30 140 Q50 70 100 66 Q150 70 170 140 Q150 120 140 126 Q120 96 100 96 Q80 96 60 126 Q50 120 30 140Z" fill="#E7A24A"/><path d="M60 126 Q80 96 100 96 Q120 96 140 126" stroke="#B9752A" stroke-width="5" fill="none"/><path d="M78 108 Q100 80 122 108" stroke="#B9752A" stroke-width="4" fill="none"/>`,
+    cookie: `<circle cx="100" cy="120" r="54" fill="#D9A15C"/><circle cx="100" cy="120" r="54" fill="none" stroke="#B57A36" stroke-width="4"/><g fill="#4A2416"><circle cx="80" cy="100" r="8"/><circle cx="118" cy="96" r="7"/><circle cx="96" cy="128" r="8"/><circle cx="126" cy="132" r="7"/><circle cx="76" cy="140" r="6"/></g>`,
+    macaron: `<ellipse cx="100" cy="138" rx="60" ry="20" fill="#F48FB1"/><rect x="44" y="112" width="112" height="16" rx="8" fill="#FFF3F7"/><ellipse cx="100" cy="102" rx="60" ry="22" fill="#F7A8C4"/><ellipse cx="86" cy="94" rx="18" ry="5" fill="#fff" opacity="0.5"/>`,
+    muffin: `<path d="M56 112 L144 112 L134 160 L66 160 Z" fill="#F5A524"/><path d="M66 112 L72 160 M86 112 L88 160 M114 112 L112 160 M134 112 L128 160" stroke="#D9840B" stroke-width="3"/><path d="M48 116 Q46 66 100 62 Q154 66 152 116 Z" fill="#8A5A3C"/><g fill="#4F5BD5"><circle cx="80" cy="88" r="7"/><circle cx="110" cy="80" r="7"/><circle cx="126" cy="100" r="6"/><circle cx="92" cy="104" r="6"/></g>`,
+    bagel: `<ellipse cx="100" cy="122" rx="64" ry="42" fill="#D9934A"/><ellipse cx="100" cy="116" rx="64" ry="38" fill="#E7A960"/><ellipse cx="100" cy="116" rx="18" ry="11" fill="#F6EBDD"/><g fill="#FFF3D6"><circle cx="70" cy="104" r="2.5"/><circle cx="128" cy="100" r="2.5"/><circle cx="118" cy="132" r="2.5"/><circle cx="80" cy="128" r="2.5"/></g>`,
+    sandwich: `<path d="M34 146 L100 82 L166 146 Z" fill="#F3D9A4"/><path d="M40 140 L100 84 L160 140" stroke="#5BAE4F" stroke-width="8" fill="none"/><path d="M46 134 L100 88 L154 134" stroke="#E5484D" stroke-width="6" fill="none"/><path d="M34 146 L100 90 L166 146 L166 156 L34 156 Z" fill="#F7E6C1"/>`,
+  }[key] || "";
+  return `<svg viewBox="0 0 200 200">${sh}${plate}${art}</svg>`;
+}
+function sunSVG() {
+  let rays = "";
+  for (let i = 0; i < 12; i++) rays += `<rect x="96" y="6" width="8" height="30" rx="4" fill="#FFE08A" transform="rotate(${i * 30} 100 100)"/>`;
+  return `<svg viewBox="0 0 200 200">${rays}<circle cx="100" cy="100" r="54" fill="#FFF3CF"/><circle cx="100" cy="100" r="44" fill="#FFD27A"/>
+    <path d="M78 92 q4 -8 8 0 M114 92 q4 -8 8 0" stroke="#4A2C1D" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M82 112 q18 16 36 0" stroke="#4A2C1D" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <circle cx="74" cy="108" r="6" fill="#F5A524" opacity="0.6"/><circle cx="126" cy="108" r="6" fill="#F5A524" opacity="0.6"/></svg>`;
+}
+// 메뉴 그림 (이모티콘 / 그림 / 사진)
+function picHTML(img, temp) {
+  if (!img) return `<span class="emo">☕</span>`;
+  if (img.type === "photo" && img.v) return `<img src="${img.v}" alt="">`;
+  if (img.type === "art") return DRINKS[img.v] ? drinkSVG(img.v, temp) : FOODS[img.v] ? foodSVG(img.v) : `<span class="emo">☕</span>`;
+  return `<span class="emo">${(img.v || "☕").replace(/[<>&"]/g, "")}</span>`;
+}
+function picEl(img, temp, cls = "pic") { const d = el("div", cls); d.innerHTML = picHTML(img, temp); return d; }
+$("start-logo").innerHTML = sunSVG(); $("menu-logo").innerHTML = sunSVG(); $("board-logo").innerHTML = sunSVG();
+
+/* =====================================================================
+   샘플 메뉴 (관리자 화면에서 마음대로 바꿀 수 있어요)
+   temp: both(HOT·ICE) / hot / ice / none(디저트)   opts: size 사이즈, shot 샷, syrup 시럽, cream 휘핑
+   ===================================================================== */
+const SAMPLE = [
+  ["coffee", "아메리카노", 2500, "both", "art:americano", "size,shot,syrup"],
+  ["coffee", "에스프레소", 2000, "hot", "art:espresso", "shot"],
+  ["coffee", "콜드브루", 3500, "ice", "art:coldbrew", "size,shot"],
+  ["coffee", "헤이즐넛 아메리카노", 3000, "both", "art:americano", "size,shot"],
+  ["latte", "카페라떼", 3500, "both", "art:latte", "size,shot,syrup"],
+  ["latte", "바닐라라떼", 4000, "both", "art:vanilla", "size,shot,cream"],
+  ["latte", "카라멜 마키아토", 4300, "both", "art:caramel", "size,shot,cream"],
+  ["latte", "초코라떼", 3800, "both", "art:choco", "size,cream"],
+  ["latte", "녹차라떼", 4000, "both", "art:greentea", "size,cream"],
+  ["tea", "캐모마일", 3000, "hot", "art:tea", "size"],
+  ["tea", "유자차", 3500, "both", "art:yuja", "size"],
+  ["tea", "복숭아 아이스티", 3000, "ice", "art:icedtea", "size"],
+  ["ade", "레몬에이드", 4000, "ice", "art:lemon", "size"],
+  ["ade", "자몽에이드", 4000, "ice", "art:grapefruit", "size"],
+  ["ade", "블루레몬에이드", 4200, "ice", "art:blue", "size"],
+  ["ade", "딸기스무디", 4500, "ice", "art:strawberry", "size,cream"],
+  ["ade", "망고스무디", 4500, "ice", "art:mango", "size,cream"],
+  ["dessert", "치즈케이크", 4500, "none", "art:cheesecake", ""],
+  ["dessert", "초코케이크", 4800, "none", "art:chococake", ""],
+  ["dessert", "크루아상", 3500, "none", "art:croissant", ""],
+  ["dessert", "초코칩 쿠키", 2500, "none", "art:cookie", ""],
+  ["dessert", "마카롱", 2000, "none", "art:macaron", ""],
+  ["dessert", "블루베리 머핀", 3000, "none", "art:muffin", ""],
+];
+const SAMPLE_ADS = {
+  a1: { title: "오늘의 추천 ☀️ 바닐라라떼", sub: "달콤한 바닐라 향으로 하루를 시작해요", tag: "TODAY", img: { type: "art", v: "vanilla" }, bg: "#C98A3E", on: true, order: 0, menu: "m06" },
+  a2: { title: "새로 나왔어요! 🍓 딸기스무디", sub: "생딸기를 듬뿍 갈아 만든 시원한 스무디", tag: "NEW", img: { type: "art", v: "strawberry" }, bg: "#E5507A", on: true, order: 1, menu: "m16" },
+  a3: { title: "케이크 한 조각 어때요? 🍰", sub: "아메리카노랑 같이 먹으면 딱!", tag: "DESSERT", img: { type: "art", v: "cheesecake" }, bg: "#6B4430", on: true, order: 2, menu: "m18" },
+};
+function sampleMenu() {
+  const out = {};
+  SAMPLE.forEach(([cat, name, price, temp, img, opts], i) => {
+    const [t, v] = img.split(":");
+    const g = {};
+    for (const k of opts.split(",").filter(Boolean)) g[k] = true;
+    if (temp === "ice" || temp === "both") g.ice = true;
+    out["m" + String(i + 1).padStart(2, "0")] = { cat, name, price, temp, img: { type: t, v }, groups: g, sold: false, order: i };
+  });
+  return out;
+}
+
+/* =====================================================================
+   데이터
+   ===================================================================== */
+let menu = {};
+let config = {};
+let orders = {};
+let ads = {};
+const sortBy = (o) => Object.entries(o || {}).map(([id, v]) => ({ id, ...v })).filter((x) => x && (x.name !== undefined || x.title !== undefined)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+function catList() { return sortBy(config.cats || DEF_CATS).filter((c) => c.name); }
+function groupList() { return sortBy(config.groups || DEF_GROUPS).filter((g) => g.name).map((g) => ({ ...g, choices: (Array.isArray(g.choices) ? g.choices : Object.values(g.choices || {})).filter((c) => c && c.n) })); }
+function groupMap() { const m = {}; for (const g of groupList()) m[g.id] = g; return m; }
+function adList() { return sortBy(ads).filter((a) => a.title); }
+// 예전에 저장된 메뉴(opts)를 새 방식(groups)으로
+function menuGroups(m) {
+  if (m.groups) return m.groups;
+  const g = {};
+  for (const k of ["size", "shot", "syrup", "cream"]) if (m.opts && m.opts[k]) g[k] = true;
+  if (m.temp === "ice" || m.temp === "both") g.ice = true;
+  return g;
+}
+const MODE = new URLSearchParams(location.search).has("barista") ? "barista" : new URLSearchParams(location.search).has("board") ? "board" : "kiosk";
+function menuList(cat) {
+  return Object.entries(menu).map(([id, m]) => ({ id, ...m })).filter((m) => m && m.name && (!cat || m.cat === cat)).sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((m) => ({ ...m, groups: menuGroups(m) }));
+}
+function orderList() {
+  return Object.entries(orders || {}).map(([id, o]) => ({ id, ...o })).filter((o) => o && o.no).sort((a, b) => a.at - b.at);
+}
+const todayOrders = () => orderList().filter((o) => o.date === kstDate());
+
+/* =====================================================================
+   키오스크
+   ===================================================================== */
+let orderMode = "매장";
+let cart = [];
+let curCat = "coffee";
+let idleTimer = null;
+function resetIdle() {
+  clearTimeout(idleTimer);
+  if (MODE !== "kiosk" || $("menu").classList.contains("hidden")) return;
+  idleTimer = setTimeout(() => {
+    if (payBusy) return;
+    closeSheet();
+    toast("오랫동안 주문이 없어서 처음으로 돌아갔어요");
+    goStart();
+  }, 120000);
+}
+["pointerdown", "keydown"].forEach((e) => document.addEventListener(e, resetIdle));
+
+let adIdx = 0, adTimer = null, pendingMenu = null;
+function goStart() {
+  cart = [];
+  curCat = (catList()[0] || {}).id || "coffee";
+  pendingMenu = null;
+  $("where").classList.add("hidden");
+  $("touch-msg").classList.remove("hidden");
+  $("ad-wrap").classList.remove("hidden");
+  $("ad-dots").classList.remove("hidden");
+  show("start");
+  renderAds();
+}
+function renderAds() {
+  const wrap = $("ad-wrap"), dots = $("ad-dots");
+  wrap.replaceChildren(); dots.replaceChildren();
+  clearInterval(adTimer);
+  const list = adList().filter((a) => a.on !== false);
+  if (!list.length) {
+    const e = el("div", "ad-empty");
+    const big = el("div", "big"); big.innerHTML = sunSVG();
+    e.append(big, el("div", "brand", "sol-cafe"));
+    e.lastChild.innerHTML = 'sol-cafe<small>SUNNY COFFEE</small>';
+    wrap.append(e);
+    return;
+  }
+  adIdx = adIdx % list.length;
+  list.forEach((a, i) => {
+    const d = el("div", "ad" + (i === adIdx ? " on" : ""));
+    d.style.background = a.bg || "#C98A3E";
+    if (a.tag) d.append(el("div", "tag", a.tag));
+    d.append(picEl(a.img, "ice"), el("h2", null, a.title));
+    if (a.sub) d.append(el("p", null, a.sub));
+    const m = a.menu && menu[a.menu];
+    if (m && !m.sold) { d.append(el("div", "go", "👆 눌러서 바로 주문하기")); d.dataset.menu = a.menu; }
+    wrap.append(d);
+    dots.append(el("i", i === adIdx ? "on" : ""));
+  });
+  if (list.length > 1) adTimer = setInterval(() => {
+    if ($("start").classList.contains("hidden")) return;
+    adIdx = (adIdx + 1) % list.length;
+    [...wrap.children].forEach((x, i) => x.classList.toggle("on", i === adIdx));
+    [...dots.children].forEach((x, i) => x.classList.toggle("on", i === adIdx));
+  }, 4500);
+}
+$("start").addEventListener("click", (e) => {
+  if (e.target.closest("#start-admin") || e.target.closest(".where")) return;
+  const ad = e.target.closest(".ad.on");
+  pendingMenu = ad && ad.dataset.menu ? ad.dataset.menu : null;
+  $("touch-msg").classList.add("hidden");
+  $("ad-wrap").classList.add("hidden");
+  $("ad-dots").classList.add("hidden");
+  $("where").classList.remove("hidden");
+  beep("tick");
+});
+document.querySelectorAll("#where button").forEach((b) => (b.onclick = () => {
+  orderMode = b.dataset.mode; beep("tick");
+  const pm = pendingMenu && menuList().find((m) => m.id === pendingMenu);
+  if (pm) curCat = pm.cat;
+  openMenu();
+  if (pm && !pm.sold) setTimeout(() => openOptions(pm), 150);
+}));
+$("btn-home").onclick = () => {
+  if (!cart.length) return goStart();
+  openSheet((sh) => {
+    sh.append(el("h3", null, "처음으로 갈까요?"), el("div", "hint", "담은 메뉴가 모두 지워져요."));
+    const y = el("button", "btn block", "처음으로"); y.type = "button"; y.onclick = () => { closeSheet(); goStart(); };
+    const n = el("button", "btn gray block", "계속 주문하기"); n.type = "button"; n.onclick = closeSheet;
+    sh.append(y, n);
+  }, true);
+};
+function openMenu() {
+  show("menu");
+  $("mode-chip").textContent = orderMode === "매장" ? "🏠 매장" : "🛍️ 포장";
+  renderCats();
+  renderMenu();
+  renderCart();
+  resetIdle();
+}
+function renderCats() {
+  const box = $("cats");
+  box.replaceChildren();
+  const cats = catList();
+  if (!cats.some((c) => c.id === curCat) && cats[0]) curCat = cats[0].id;
+  for (const c of cats) {
+    const k = c.id, label = `${c.icon || ""} ${c.name}`.trim();
+    const b = el("button", k === curCat ? "on" : "", label); b.type = "button";
+    b.onclick = () => { curCat = k; beep("tick"); renderCats(); renderMenu(); $("mgrid").parentElement.scrollTop = 0; };
+    box.append(b);
+  }
+}
+function renderMenu() {
+  const g = $("mgrid");
+  g.replaceChildren();
+  const list = menuList(curCat);
+  if (!list.length) { const e = el("div", "hint", "이 카테고리에 메뉴가 없어요"); e.style.gridColumn = "1/-1"; e.style.textAlign = "center"; e.style.padding = "30px"; g.append(e); }
+  for (const m of list) {
+    const c = el("button", "mcard" + (m.sold ? " sold" : ""));
+    c.type = "button";
+    c.append(picEl(m.img, m.temp === "hot" ? "hot" : "ice"), el("div", "nm", m.name), el("div", "pr num", won(m.price)));
+    const tags = el("div", "tags");
+    if (m.temp === "both" || m.temp === "hot") { const t = el("span", "tag", "HOT"); t.style.background = "var(--hot)"; tags.append(t); }
+    if (m.temp === "both" || m.temp === "ice") { const t = el("span", "tag", "ICE"); t.style.background = "var(--ice)"; tags.append(t); }
+    c.append(tags);
+    c.onclick = () => openOptions(m);
+    g.append(c);
+  }
+}
+// 이 메뉴에 붙은 옵션 묶음 (관리자 순서대로)
+function menuGroupList(m, temp) {
+  const on = m.groups || {};
+  return groupList().filter((g) => on[g.id] && g.choices.length && !(g.iceOnly && temp !== "ice"));
+}
+// 고른 옵션 → 글자 · 가격
+function optSummary(m, o) {
+  const parts = [];
+  let extra = 0;
+  if (o.temp) parts.push(o.temp === "hot" ? "HOT" : "ICE");
+  for (const g of menuGroupList(m, o.temp)) {
+    const v = o.sel[g.id];
+    if (g.multi) {
+      for (const i of v || []) { const c = g.choices[i]; if (c) { parts.push(c.n); extra += Number(c.p) || 0; } }
+    } else {
+      const def = Math.min(g.def || 0, g.choices.length - 1);
+      const i = v ?? def, c = g.choices[i];
+      if (!c) continue;
+      extra += Number(c.p) || 0;
+      if (!(i === def && !c.p && /없음|기본|보통/.test(c.n))) parts.push(c.n);
+    }
+  }
+  return { text: parts.join(" · "), unit: m.price + extra };
+}
+function openOptions(m) {
+  beep("tick");
+  const o = { temp: m.temp === "both" ? "ice" : m.temp === "none" ? null : m.temp, sel: {} };
+  for (const g of groupList()) o.sel[g.id] = g.multi ? [] : Math.min(g.def || 0, Math.max(0, g.choices.length - 1));
+  let qty = 1;
+  openSheet((sh) => {
+    const top = el("div", "opt-top");
+    const pic = picEl(m.img, o.temp || "ice");
+    const ttl = el("div");
+    const priceEl = el("span", "num");
+    ttl.append(el("b", null, m.name), priceEl);
+    top.append(pic, ttl);
+    sh.append(top);
+    const secs = el("div");
+    secs.style.cssText = "display:flex;flex-direction:column;gap:14px";
+    sh.append(secs);
+    const foot = el("div", "opt-foot");
+    const q = el("div", "qty");
+    const qm = el("button", null, "−"), qp = el("button", null, "+"), qv = el("b", "num", "1");
+    qm.type = qp.type = "button";
+    qm.style.background = qp.style.background = "var(--input)";
+    q.append(qm, qv, qp);
+    const add = el("button", "btn", ""); add.type = "button"; add.style.flex = "1";
+    foot.append(q, add);
+    sh.append(foot);
+    const draw = () => {
+      secs.replaceChildren();
+      const sec = (title, items) => {
+        const s = el("div", "opt-sec");
+        s.append(el("h4", null, title));
+        const row = el("div", "chips");
+        for (const [label, sub, on, fn, cls] of items) {
+          const b = el("button", "chip" + (on ? " on" : "") + (cls ? " " + cls : "")); b.type = "button";
+          b.append(document.createTextNode(label));
+          if (sub) b.append(el("small", null, sub));
+          b.onclick = () => { fn(); beep("tick"); draw(); };
+          row.append(b);
+        }
+        s.append(row);
+        secs.append(s);
+      };
+      if (m.temp === "both") sec("온도", [["🔥 HOT", "", o.temp === "hot", () => (o.temp = "hot"), "hot"], ["🧊 ICE", "", o.temp === "ice", () => (o.temp = "ice"), "ice"]]);
+      for (const g of menuGroupList(m, o.temp)) {
+        const price = (c) => (Number(c.p) ? `+${won(c.p)}` : "");
+        if (g.multi) sec(`${g.name} (여러 개 골라도 돼요)`, g.choices.map((c, i) => [c.n, price(c), o.sel[g.id].includes(i), () => { const a = o.sel[g.id]; const k = a.indexOf(i); k >= 0 ? a.splice(k, 1) : a.push(i); }]));
+        else sec(g.name, g.choices.map((c, i) => [c.n, price(c), o.sel[g.id] === i, () => (o.sel[g.id] = i)]));
+      }
+      pic.innerHTML = picHTML(m.img, o.temp || "ice");
+      const up = optSummary(m, o).unit;
+      priceEl.textContent = won(up);
+      qv.textContent = qty;
+      add.textContent = `${qty}개 담기 · ${won(up * qty)}`;
+    };
+    qm.onclick = () => { qty = Math.max(1, qty - 1); draw(); };
+    qp.onclick = () => { qty = Math.min(20, qty + 1); draw(); };
+    add.onclick = () => {
+      const { text, unit } = optSummary(m, o);
+      const key = m.id + "|" + text + "|" + unit;
+      const same = cart.find((c) => c.key === key);
+      if (same) same.qty = Math.min(20, same.qty + qty);
+      else cart.push({ key, id: m.id, name: m.name, img: m.img, temp: o.temp || "", text, unit, qty });
+      closeSheet();
+      beep("add");
+      renderCart();
+      toast(`🛒 ${m.name} ${qty}개 담았어요`, "ok");
+    };
+    draw();
+  });
+}
+function cartTotal() { return cart.reduce((s, c) => s + c.unit * c.qty, 0); }
+function renderCart() {
+  const list = $("cart-list");
+  list.replaceChildren();
+  if (!cart.length) list.append(el("div", "cart-empty", "메뉴를 눌러서 담아 주세요 ☕"));
+  cart.forEach((c, i) => {
+    const r = el("div", "citem");
+    const txt = el("div", "txt");
+    txt.append(el("b", null, c.name), el("span", null, c.text || "기본"));
+    const q = el("div", "qty");
+    const m = el("button", null, "−"), p = el("button", null, "+"); m.type = p.type = "button";
+    m.onclick = () => { c.qty--; if (c.qty <= 0) cart.splice(i, 1); renderCart(); };
+    p.onclick = () => { c.qty = Math.min(20, c.qty + 1); renderCart(); };
+    q.append(m, el("b", "num", String(c.qty)), p);
+    r.append(picEl(c.img, c.temp || "ice"), txt, q, el("div", "cp num", won(c.unit * c.qty)));
+    list.append(r);
+  });
+  const n = cart.reduce((s, c) => s + c.qty, 0);
+  $("cart-count").textContent = `담은 메뉴 ${n}개`;
+  $("cart-total").textContent = won(cartTotal());
+  $("btn-pay").disabled = !cart.length;
+}
+
+/* ---------------- 결제 (놀이용) ---------------- */
+let payBusy = false;
+$("btn-pay").onclick = () => {
+  if (!cart.length) return;
+  const total = cartTotal();
+  openSheet((sh) => {
+    const box = el("div", "pay-box");
+    box.append(el("h3", null, "결제 방법을 골라 주세요"), el("div", "pay-total num", won(total)), el("div", "hint", `${orderMode} · 메뉴 ${cart.reduce((s, c) => s + c.qty, 0)}개`));
+    const ways = el("div", "pay-ways");
+    for (const [ic, label, kind] of [["💳", "카드 결제", "card"], ["📱", "휴대폰 결제", "phone"]]) {
+      const b = el("button"); b.type = "button";
+      b.append(el("span", null, ic), document.createTextNode(label));
+      b.onclick = () => payAnim(kind, total);
+      ways.append(b);
+    }
+    box.append(ways);
+    const cancel = el("button", "btn gray block", "취소"); cancel.type = "button"; cancel.onclick = closeSheet;
+    box.append(cancel);
+    sh.append(box);
+  }, true);
+};
+function payAnim(kind, total) {
+  payBusy = true;
+  openSheet((sh) => {
+    const box = el("div", "pay-box");
+    if (kind === "card") {
+      box.append(el("h3", null, "카드를 꽂아 주세요"));
+      const r = el("div", "reader"); r.innerHTML = `<div class="slot"></div><div class="light"></div><div class="card"></div>`;
+      box.append(r);
+      setTimeout(() => r.querySelector(".light").classList.add("on"), 1300);
+    } else {
+      box.append(el("h3", null, "휴대폰을 리더기에 대 주세요"), el("div", "phone-pay", "📱"));
+    }
+    const st = el("div", "hint", "결제 중이에요… 잠시만 기다려 주세요");
+    box.append(el("div", "spinner"), st);
+    sh.append(box);
+  }, true);
+  beep("tick");
+  setTimeout(async () => {
+    beep("pay");
+    try { await placeOrder(total, kind); }
+    catch (e) { console.warn(e); toast("주문을 보내지 못했어요. 인터넷을 확인해 주세요", "err"); }
+    payBusy = false;
+  }, 2200);
+}
+async function placeOrder(total, kind) {
+  const today = kstDate();
+  const no = await window.scRemote.nextNo(today);
+  const order = {
+    no, date: today, at: nowMs(), mode: orderMode, pay: kind === "card" ? "카드" : "휴대폰", total, status: "new",
+    items: cart.map((c) => ({ id: c.id, name: c.name, qty: c.qty, unit: c.unit, opt: c.text, temp: c.temp || "" })),
+  };
+  await window.scRemote.add("orders", order);
+  closeSheet();
+  showDone(order);
+}
+let doneTimer = null;
+function showDone(o) {
+  show("done");
+  $("done-no").textContent = o.no;
+  const r = $("receipt");
+  r.replaceChildren();
+  r.append(el("div", "rh", "☀️ sol-cafe"));
+  const line = (a, b, cls) => { const d = el("div", "rl" + (cls ? " " + cls : "")); d.append(el("span", null, a), el("span", "num", b)); r.append(d); };
+  line("주문 번호", String(o.no));
+  line("주문 시간", hm(o.at));
+  line("식사", o.mode);
+  r.append(el("hr"));
+  for (const it of o.items) { line(`${it.name} × ${it.qty}`, won(it.unit * it.qty)); if (it.opt) r.append(el("div", "ro", it.opt)); }
+  r.append(el("hr"));
+  const t = el("div", "rl"); t.style.fontWeight = "900"; t.style.fontSize = "15px"; t.append(el("span", null, "합계"), el("span", "num", won(o.total))); r.append(t);
+  line("결제", o.pay);
+  cart = [];
+  let left = 15;
+  $("done-count").textContent = `${left}초 뒤에 처음 화면으로 돌아가요`;
+  clearInterval(doneTimer);
+  doneTimer = setInterval(() => { left--; $("done-count").textContent = `${left}초 뒤에 처음 화면으로 돌아가요`; if (left <= 0) { clearInterval(doneTimer); goStart(); } }, 1000);
+}
+$("done-ok").onclick = () => { clearInterval(doneTimer); goStart(); };
+
+/* =====================================================================
+   바리스타 화면 (?barista)
+   ===================================================================== */
+let seenOrders = null;
+let soundOn = false;
+function renderBarista() {
+  const list = todayOrders().filter((o) => o.status !== "picked");
+  const cols = { new: $("col-new"), making: $("col-making"), done: $("col-done") };
+  for (const k in cols) cols[k].replaceChildren();
+  const cnt = { new: 0, making: 0, done: 0 };
+  // 새 주문 알림
+  const ids = new Set(list.filter((o) => o.status === "new").map((o) => o.id));
+  if (seenOrders) { const fresh = [...ids].filter((id) => !seenOrders.has(id)); if (fresh.length) { beep("order"); toast(`🆕 새 주문 ${fresh.length}건!`, "ok"); } }
+  seenOrders = ids;
+  for (const o of list) {
+    const col = cols[o.status];
+    if (!col) continue;
+    cnt[o.status]++;
+    const c = el("div", "ocard" + (o.status === "new" ? " new" : ""));
+    const h = el("div", "oh");
+    const mins = Math.floor((nowMs() - o.at) / 60000);
+    h.append(el("span", "ono num", String(o.no)), el("span", "omode", o.mode === "포장" ? "🛍️ 포장" : "🏠 매장"), el("span", "otime" + (mins >= 10 && o.status !== "done" ? " late" : ""), `${hm(o.at)} · ${mins}분 전`));
+    c.append(h);
+    for (const it of o.items || []) {
+      const d = el("div", "oit");
+      if (it.temp) { const t = el("span", "t", it.temp === "hot" ? "HOT" : "ICE"); t.style.background = it.temp === "hot" ? "var(--hot)" : "var(--ice)"; d.append(t); }
+      d.append(document.createTextNode(`${it.name} × ${it.qty}`));
+      if (it.opt) { const opt = it.opt.split(" · ").filter((x) => x !== "HOT" && x !== "ICE").join(" · "); if (opt) d.append(el("small", null, opt)); }
+      c.append(d);
+    }
+    const next = { new: ["🔥 만들기 시작", "making", ""], making: ["✅ 완성! 번호 부르기", "done", "green"], done: ["👋 픽업 완료", "picked", "brown"] }[o.status];
+    const b = el("button", "btn block " + next[2], next[0]); b.type = "button";
+    b.onclick = () => setStatus(o, next[1]);
+    c.append(b);
+    if (o.status === "done") {
+      const again = el("button", "btn ghost block", "🔔 번호 다시 부르기"); again.type = "button";
+      again.onclick = () => window.scRemote.patch("orders/" + o.id, { callAt: nowMs() });
+      c.append(again);
+    }
+    col.append(c);
+  }
+  for (const k in cols) if (!cnt[k]) cols[k].append(el("div", "b-empty", { new: "새 주문을 기다리는 중…", making: "만드는 음료가 없어요", done: "픽업 기다리는 음료가 없어요" }[k]));
+  $("c-new").textContent = cnt.new; $("c-making").textContent = cnt.making; $("c-done").textContent = cnt.done;
+}
+function setStatus(o, status) {
+  const patch = { status };
+  if (status === "done") { patch.doneAt = nowMs(); patch.callAt = nowMs(); }
+  beep(status === "done" ? "ding" : "tick");
+  window.scRemote.patch("orders/" + o.id, patch).catch(() => toast("바꾸지 못했어요", "err"));
+}
+$("b-sound").onclick = () => { soundOn = true; audio(); beep("ding"); $("b-sound").textContent = "🔔 소리 켜짐"; $("b-sound").classList.add("on"); };
+$("b-menu").onclick = () => askPin(() => openAdmin("barista"));
+
+/* =====================================================================
+   픽업 전광판 (?board)
+   ===================================================================== */
+let lastCalls = null;
+let callQueue = [];
+let calling = false;
+function renderBoard() {
+  const list = todayOrders();
+  const wait = list.filter((o) => o.status === "new" || o.status === "making");
+  const ready = list.filter((o) => o.status === "done").sort((a, b) => (b.doneAt || 0) - (a.doneAt || 0));
+  const fill = (box, arr) => { box.replaceChildren(); for (const o of arr.slice(0, 12)) box.append(el("div", null, String(o.no))); };
+  fill($("bd-wait"), wait);
+  fill($("bd-ready"), ready);
+  // 새로 완성됐거나 '다시 부르기'한 번호
+  const calls = new Map(ready.map((o) => [o.id, o.callAt || o.doneAt || 0]));
+  if (lastCalls) for (const o of ready) { const t = calls.get(o.id); if (t && t !== lastCalls.get(o.id) && nowMs() - t < 60000) callQueue.push(o.no); }
+  lastCalls = calls;
+  runCalls();
+}
+function runCalls() {
+  if (calling || !callQueue.length) return;
+  calling = true;
+  const no = callQueue.shift();
+  const box = el("div", "bd-call");
+  box.innerHTML = `<div class="bell">🔔</div><b class="num">${no}</b><p>번 고객님, 주문하신 메뉴가 준비되었습니다!</p>`;
+  document.body.append(box);
+  beep("ding");
+  setTimeout(() => beep("ding"), 900);
+  speak(`${no}번 고객님, 주문하신 메뉴가 준비되었습니다.`);
+  setTimeout(() => { box.remove(); calling = false; runCalls(); }, 5000);
+}
+function speak(text) {
+  if (!soundOn) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "ko-KR"; u.rate = 0.95;
+    const v = speechSynthesis.getVoices().find((x) => x.lang && x.lang.startsWith("ko"));
+    if (v) u.voice = v;
+    setTimeout(() => speechSynthesis.speak(u), 600);
+  } catch (e) { /* 괜찮음 */ }
+}
+function boardClock() { const d = new Date(nowMs() + 9 * 3600e3); $("bd-clock").textContent = `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; }
+
+/* =====================================================================
+   효과음
+   ===================================================================== */
+let actx = null;
+function audio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === "suspended") actx.resume(); return actx; } catch (e) { return null; } }
+function beep(kind) {
+  if ((MODE === "barista" || MODE === "board") && !soundOn) return;
+  const a = audio(); if (!a) return;
+  const t = a.currentTime;
+  const note = (f, s, d, type = "sine", v = 0.12) => {
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t + s); g.gain.exponentialRampToValueAtTime(v, t + s + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + s + d);
+    o.connect(g).connect(a.destination); o.start(t + s); o.stop(t + s + d + 0.02);
+  };
+  if (kind === "tick") note(1300, 0, 0.04, "sine", 0.05);
+  else if (kind === "add") { note(660, 0, 0.1, "triangle"); note(990, 0.08, 0.14, "triangle"); }
+  else if (kind === "pay") [523, 659, 784, 1047].forEach((f, i) => note(f, i * 0.09, 0.25, "triangle"));
+  else if (kind === "ding") { note(1319, 0, 0.6, "sine", 0.2); note(1047, 0.35, 0.9, "sine", 0.2); }
+  else if (kind === "order") { note(880, 0, 0.15, "square", 0.06); note(880, 0.2, 0.15, "square", 0.06); note(1175, 0.4, 0.3, "square", 0.06); }
+}
+
+/* =====================================================================
+   관리자
+   ===================================================================== */
+function askPin(onOk) {
+  let ok = false; try { ok = sessionStorage.getItem("sc-admin") === "1"; } catch (e) { ok = false; }
+  if (ok) return onOk();
+  openSheet((sh) => {
+    sh.append(el("h3", null, "🔒 관리자 비밀번호"), el("div", "hint", "직원만 들어갈 수 있어요."));
+    const inp = el("input", "field"); inp.type = "password"; inp.inputMode = "numeric"; inp.maxLength = 8; inp.placeholder = "비밀번호";
+    const msg = el("div", "msg");
+    const go = el("button", "btn brown block", "들어가기"); go.type = "button";
+    const check = async () => {
+      if ((await pinHash(inp.value)) !== (config.pinHash || DEFAULT_PIN_HASH)) { msg.textContent = "비밀번호가 틀렸어요"; inp.value = ""; return; }
+      try { sessionStorage.setItem("sc-admin", "1"); } catch (e) { /* 괜찮음 */ }
+      closeSheet(); onOk();
+    };
+    go.onclick = check;
+    inp.addEventListener("keydown", (e) => e.key === "Enter" && check());
+    const no = el("button", "btn gray block", "취소"); no.type = "button"; no.onclick = closeSheet;
+    sh.append(inp, msg, go, no);
+    setTimeout(() => inp.focus(), 200);
+  }, true);
+}
+// 시작 화면 ⚙️ (키오스크)
+$("start-admin").onclick = (e) => { e.stopPropagation(); askPin(() => openAdmin("kiosk")); };
+let adminFrom = "kiosk";
+let aTab = "menu";
+function openAdmin(from) {
+  adminFrom = from;
+  show("admin");
+  setATab(aTab);
+}
+$("a-exit").onclick = () => {
+  try { sessionStorage.removeItem("sc-admin"); } catch (e) { /* 괜찮음 */ }
+  if (adminFrom === "barista") { show("barista"); renderBarista(); } else goStart();
+};
+document.querySelectorAll("#a-tabs button").forEach((b) => (b.onclick = () => setATab(b.dataset.t)));
+function setATab(t) {
+  aTab = t;
+  document.querySelectorAll("#a-tabs button").forEach((b) => b.classList.toggle("on", b.dataset.t === t));
+  ({ menu: renderAMenu, cats: renderACats, opts: renderAOpts, ads: renderAAds, sales: renderASales, set: renderASet })[t]();
+}
+function renderAMenu() {
+  const body = $("a-body");
+  body.replaceChildren();
+  const add = el("button", "btn block", "➕ 새 메뉴 만들기"); add.type = "button"; add.onclick = () => editMenu(null);
+  body.append(add);
+  const cats = catList();
+  const known = new Set(cats.map((c) => c.id));
+  const lost = menuList().filter((m) => !known.has(m.cat));
+  for (const c of [...cats, ...(lost.length ? [{ id: "__lost", name: "카테고리 없음 (✏️로 옮겨 주세요)", icon: "❓" }] : [])]) {
+    const cat = c.id, label = `${c.icon || ""} ${c.name}`;
+    const list = cat === "__lost" ? lost : menuList(cat);
+    body.append(el("div", "sec-title", `${label} (${list.length})`));
+    list.forEach((m, i) => {
+      const r = el("div", "arow");
+      const txt = el("div", "txt");
+      txt.append(el("b", null, m.name), el("span", null, `${won(m.price)} · ${{ both: "HOT·ICE", hot: "HOT만", ice: "ICE만", none: "온도 없음" }[m.temp]}`));
+      const mb = (t, fn, cls) => { const b = el("button", "mini" + (cls ? " " + cls : ""), t); b.type = "button"; b.onclick = fn; r.append(b); return b; };
+      r.append(picEl(m.img, m.temp === "hot" ? "hot" : "ice"), txt);
+      mb("▲", () => swapOrder(list, i, -1));
+      mb("▼", () => swapOrder(list, i, 1));
+      mb(m.sold ? "품절 중" : "품절", () => window.scRemote.patch("menu/" + m.id, { sold: !m.sold }).then(() => toast(m.sold ? `${m.name} 다시 판매해요` : `${m.name} 품절 처리했어요`)), m.sold ? "on" : "");
+      mb("✏️", () => editMenu(m));
+      body.append(r);
+    });
+  }
+}
+function swapOrder(list, i, d) {
+  const j = i + d;
+  if (j < 0 || j >= list.length) return;
+  const a = list[i], b = list[j];
+  const oa = a.order ?? i, ob = b.order ?? j;
+  window.scRemote.patch("menu", { [a.id + "/order"]: ob === oa ? oa + d : ob, [b.id + "/order"]: oa });
+}
+function editMenu(m) {
+  const f = m ? JSON.parse(JSON.stringify(m)) : { cat: (catList()[0] || {}).id || "coffee", name: "", price: 3000, temp: "both", img: { type: "emoji", v: "☕" }, groups: { size: true, ice: true }, sold: false };
+  f.groups = menuGroups(f);
+  openSheet((sh) => {
+    const prev = el("div", "opt-top");
+    const pic = el("div", "pic");
+    const ptxt = el("div");
+    prev.append(pic, ptxt);
+    sh.append(el("h3", null, m ? "✏️ 메뉴 고치기" : "➕ 새 메뉴"), prev);
+    const upd = () => { pic.innerHTML = picHTML(f.img, f.temp === "hot" ? "hot" : "ice"); ptxt.replaceChildren(el("b", null, f.name || "메뉴 이름"), el("span", "num", won(Number(f.price) || 0))); };
+    const row = (label, node) => { const r = el("div", "form-row"); r.append(el("label", null, label), node); sh.append(r); };
+    const name = el("input", "field"); name.maxLength = 20; name.value = f.name; name.placeholder = "예: 아메리카노"; name.oninput = () => { f.name = name.value; upd(); };
+    row("이름", name);
+    const price = el("input", "field"); price.type = "number"; price.inputMode = "numeric"; price.value = f.price; price.oninput = () => { f.price = Math.max(0, Math.round(Number(price.value) || 0)); upd(); };
+    row("가격", price);
+    const cat = el("select", "field");
+    for (const c of catList()) { const o = el("option", null, `${c.icon || ""} ${c.name}`); o.value = c.id; if (c.id === f.cat) o.selected = true; cat.append(o); }
+    cat.onchange = () => (f.cat = cat.value);
+    row("종류", cat);
+    const temps = el("div", "checks");
+    const drawTemps = () => {
+      temps.replaceChildren();
+      for (const [k, label] of [["both", "HOT·ICE"], ["hot", "HOT만"], ["ice", "ICE만"], ["none", "없음(디저트)"]]) {
+        const b = el("button", f.temp === k ? "on" : "", label); b.type = "button"; b.onclick = () => { f.temp = k; drawTemps(); upd(); }; temps.append(b);
+      }
+    };
+    drawTemps();
+    row("온도", temps);
+    const opts = el("div", "checks");
+    const drawOpts = () => {
+      opts.replaceChildren();
+      for (const g of groupList()) {
+        const b = el("button", f.groups[g.id] ? "on" : "", g.name); b.type = "button"; b.onclick = () => { f.groups[g.id] = !f.groups[g.id]; if (!f.groups[g.id]) delete f.groups[g.id]; drawOpts(); }; opts.append(b);
+      }
+      if (!groupList().length) opts.append(el("span", "hint", "옵션 탭에서 옵션을 먼저 만들어 주세요"));
+    };
+    drawOpts();
+    row("옵션", opts);
+    sh.append(el("div", "sec-title", "메뉴 그림"));
+    sh.append(...imagePicker(f, upd));
+    const msg = el("div", "msg");
+    const save = el("button", "btn brown block", m ? "💾 저장" : "➕ 메뉴 추가"); save.type = "button";
+    save.onclick = async () => {
+      f.name = (f.name || "").trim();
+      if (!f.name) { msg.textContent = "메뉴 이름을 써 주세요"; return; }
+      const data = { cat: f.cat, name: f.name, price: Number(f.price) || 0, temp: f.temp, img: f.img, groups: f.groups, sold: !!f.sold, order: m ? m.order ?? 0 : Date.now() % 1e9 };
+      try {
+        if (m) await window.scRemote.put("menu/" + m.id, data);
+        else await window.scRemote.add("menu", data);
+        closeSheet(); toast(m ? "저장했어요" : `${f.name} 추가했어요`, "ok");
+      } catch (e) { msg.textContent = "저장하지 못했어요 (사진이 너무 크면 다른 사진으로 해 보세요)"; }
+    };
+    sh.append(msg, save);
+    if (m) {
+      const del = el("button", "btn red block", "🗑️ 메뉴 지우기"); del.type = "button";
+      del.onclick = async () => { if (!confirmDel) { confirmDel = true; del.textContent = "한 번 더 누르면 지워져요"; return; } await window.scRemote.put("menu/" + m.id, null); closeSheet(); toast("지웠어요"); };
+      let confirmDel = false;
+      sh.append(del);
+    }
+    const cancel = el("button", "btn gray block", "취소"); cancel.type = "button"; cancel.onclick = closeSheet;
+    sh.append(cancel);
+    upd();
+  });
+}
+// 그림 고르기 (이모티콘 / 그림 / 사진) — 메뉴랑 광고에서 같이 써요
+function imagePicker(f, upd) {
+  let imgTab = f.img.type;
+  const tabs = el("div", "img-tabs");
+  const area = el("div");
+  const drawImg = () => {
+    tabs.replaceChildren();
+    for (const [k, label] of [["emoji", "😀 이모티콘"], ["art", "🎨 그림"], ["photo", "📷 사진"]]) {
+      const b = el("button", imgTab === k ? "on" : "", label); b.type = "button"; b.onclick = () => { imgTab = k; drawImg(); }; tabs.append(b);
+    }
+    area.replaceChildren();
+    if (imgTab === "emoji") {
+      const g = el("div", "gallery emoji-grid");
+      for (const e of ["☕", "🧋", "🥤", "🍵", "🧃", "🥛", "🍹", "🍋", "🍓", "🥭", "🍰", "🧁", "🍪", "🥐", "🍩", "🥯", "🥪", "🍫", "🍦", "🍮"]) {
+        const b = el("button", f.img.type === "emoji" && f.img.v === e ? "on" : ""); b.type = "button";
+        b.append(el("span", "emo", e)); b.onclick = () => { f.img = { type: "emoji", v: e }; drawImg(); upd(); }; g.append(b);
+      }
+      area.append(g);
+    } else if (imgTab === "art") {
+      const g = el("div", "gallery");
+      for (const k of [...Object.keys(DRINKS), ...Object.keys(FOODS)]) {
+        const b = el("button", f.img.type === "art" && f.img.v === k ? "on" : ""); b.type = "button"; b.title = DRINKS[k] ? DRINKS[k].name : FOODS[k];
+        b.innerHTML = picHTML({ type: "art", v: k }, "ice");
+        b.onclick = () => { f.img = { type: "art", v: k }; drawImg(); upd(); };
+        g.append(b);
+      }
+      area.append(g, el("div", "hint", "음료 그림은 손님이 HOT을 고르면 머그컵, ICE를 고르면 아이스컵으로 바뀌어요!"));
+    } else {
+      const inp = el("input"); inp.type = "file"; inp.accept = "image/*";
+      const pick = el("button", "btn ghost block", "📷 사진 고르기 / 찍기"); pick.type = "button"; pick.onclick = () => inp.click();
+      inp.onchange = async () => {
+        const file = inp.files && inp.files[0]; if (!file) return;
+        try { f.img = { type: "photo", v: await shrinkPhoto(file) }; upd(); toast("사진을 넣었어요 📷", "ok"); }
+        catch (e) { toast("사진을 읽지 못했어요", "err"); }
+      };
+      inp.style.display = "none";
+      area.append(inp, pick, el("div", "hint", "사진은 작게 줄여서 저장해요 (정사각형으로 잘려요)."));
+    }
+  };
+  drawImg();
+  return [tabs, area];
+}
+function shrinkPhoto(file) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => {
+      const S = 360, c = document.createElement("canvas");
+      c.width = c.height = S;
+      const s = Math.min(img.width, img.height);
+      c.getContext("2d").drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, S, S);
+      URL.revokeObjectURL(img.src);
+      res(c.toDataURL("image/jpeg", 0.72));
+    };
+    img.onerror = rej;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+/* ---------- 관리자: 카테고리 ---------- */
+const CAT_EMOJI = ["☕", "🥛", "🍵", "🍹", "🍰", "🧋", "🥤", "🍦", "🥐", "🍪", "🥪", "⭐", "🔥", "🎁", "🌿", "🍫"];
+function catsObj() { const o = {}; for (const c of catList()) o[c.id] = { name: c.name, icon: c.icon || "", order: c.order ?? 0 }; return o; }
+function renderACats() {
+  const body = $("a-body");
+  body.replaceChildren();
+  const add = el("button", "btn block", "➕ 새 카테고리"); add.type = "button"; add.onclick = () => editCat(null);
+  body.append(add, el("div", "hint", "키오스크 위쪽 탭이에요. ▲▼로 순서를 바꿔요."));
+  const list = catList();
+  list.forEach((c, i) => {
+    const r = el("div", "arow");
+    const ic = el("div", "pic"); ic.innerHTML = `<span class="emo">${c.icon || "📁"}</span>`;
+    const txt = el("div", "txt"); txt.append(el("b", null, c.name), el("span", null, `메뉴 ${menuList(c.id).length}개`));
+    r.append(ic, txt);
+    const mb = (t, fn, cls) => { const b = el("button", "mini" + (cls ? " " + cls : ""), t); b.type = "button"; b.onclick = fn; r.append(b); };
+    mb("▲", () => moveItem("config/cats", catsObj(), list, i, -1));
+    mb("▼", () => moveItem("config/cats", catsObj(), list, i, 1));
+    mb("✏️", () => editCat(c));
+    body.append(r);
+  });
+}
+// 순서 바꾸기 (order 값을 0,1,2… 로 다시 매겨요)
+function moveItem(path, obj, list, i, d) {
+  const j = i + d;
+  if (j < 0 || j >= list.length) return;
+  const ids = list.map((x) => x.id);
+  [ids[i], ids[j]] = [ids[j], ids[i]];
+  ids.forEach((id, k) => { if (obj[id]) obj[id].order = k; });
+  window.scRemote.put(path, obj).catch(() => toast("저장하지 못했어요", "err"));
+}
+function editCat(c) {
+  const f = c ? { name: c.name, icon: c.icon || "" } : { name: "", icon: "⭐" };
+  openSheet((sh) => {
+    sh.append(el("h3", null, c ? "✏️ 카테고리 고치기" : "➕ 새 카테고리"));
+    const name = el("input", "field"); name.maxLength = 10; name.placeholder = "예: 시즌 메뉴"; name.value = f.name;
+    sh.append(name, el("div", "sec-title", "아이콘"));
+    const g = el("div", "gallery emoji-grid");
+    const draw = () => { g.replaceChildren(); for (const e of CAT_EMOJI) { const b = el("button", f.icon === e ? "on" : ""); b.type = "button"; b.append(el("span", "emo", e)); b.onclick = () => { f.icon = e; draw(); }; g.append(b); } };
+    draw();
+    sh.append(g);
+    const msg = el("div", "msg");
+    const save = el("button", "btn brown block", c ? "💾 저장" : "➕ 추가"); save.type = "button";
+    save.onclick = async () => {
+      f.name = name.value.trim();
+      if (!f.name) { msg.textContent = "이름을 써 주세요"; return; }
+      const obj = catsObj();
+      const id = c ? c.id : "c" + Date.now().toString(36);
+      obj[id] = { name: f.name, icon: f.icon, order: c ? c.order ?? 0 : Object.keys(obj).length };
+      await window.scRemote.put("config/cats", obj);
+      closeSheet(); toast("저장했어요", "ok");
+    };
+    sh.append(msg, save);
+    if (c) {
+      const del = el("button", "btn red block", "🗑️ 카테고리 지우기"); del.type = "button";
+      del.onclick = async () => {
+        const n = menuList(c.id).length;
+        if (n) { msg.textContent = `이 카테고리에 메뉴가 ${n}개 있어요. 메뉴를 먼저 다른 카테고리로 옮기거나 지워 주세요.`; return; }
+        if (catList().length <= 1) { msg.textContent = "카테고리는 1개 이상 있어야 해요"; return; }
+        const obj = catsObj(); delete obj[c.id];
+        await window.scRemote.put("config/cats", obj);
+        closeSheet(); toast("지웠어요");
+      };
+      sh.append(del);
+    }
+    const no = el("button", "btn gray block", "취소"); no.type = "button"; no.onclick = closeSheet;
+    sh.append(no);
+  });
+}
+
+/* ---------- 관리자: 옵션 ---------- */
+function groupsObj() { const o = {}; for (const g of groupList()) { const { id, ...rest } = g; o[id] = rest; } return o; }
+function renderAOpts() {
+  const body = $("a-body");
+  body.replaceChildren();
+  const add = el("button", "btn block", "➕ 새 옵션 만들기"); add.type = "button"; add.onclick = () => editGroup(null);
+  body.append(add, el("div", "hint", "HOT/ICE는 메뉴마다 정해요 (📋 메뉴 → ✏️ → 온도). 여기서는 사이즈, 얼음, 샷, 시럽 같은 옵션을 만들고, 메뉴에서 어떤 옵션을 쓸지 골라요."));
+  const list = groupList();
+  list.forEach((g, i) => {
+    const r = el("div", "arow");
+    const txt = el("div", "txt");
+    const used = menuList().filter((m) => m.groups[g.id]).length;
+    txt.append(el("b", null, `${g.name}${g.iceOnly ? " 🧊" : ""}`), el("span", null, `${g.multi ? "여러 개" : "하나만"} · ${g.choices.map((c) => c.n + (Number(c.p) ? `(+${c.p})` : "")).join(", ")} · 메뉴 ${used}개`));
+    txt.lastChild.style.cssText = "display:block;white-space:normal";
+    r.append(txt);
+    const mb = (t, fn) => { const b = el("button", "mini", t); b.type = "button"; b.onclick = fn; r.append(b); };
+    mb("▲", () => moveItem("config/groups", groupsObj(), list, i, -1));
+    mb("▼", () => moveItem("config/groups", groupsObj(), list, i, 1));
+    mb("✏️", () => editGroup(g));
+    body.append(r);
+  });
+}
+function editGroup(g) {
+  const f = g ? JSON.parse(JSON.stringify({ name: g.name, multi: !!g.multi, iceOnly: !!g.iceOnly, def: g.def || 0, choices: g.choices })) : { name: "", multi: false, iceOnly: false, def: 0, choices: [{ n: "", p: 0 }, { n: "", p: 0 }] };
+  openSheet((sh) => {
+    sh.append(el("h3", null, g ? "✏️ 옵션 고치기" : "➕ 새 옵션"));
+    const name = el("input", "field"); name.maxLength = 12; name.placeholder = "옵션 이름 (예: 우유 변경)"; name.value = f.name;
+    sh.append(name);
+    const kind = el("div", "checks");
+    const flags = el("div", "checks");
+    const list = el("div");
+    list.style.cssText = "display:flex;flex-direction:column;gap:8px";
+    const draw = () => {
+      kind.replaceChildren(); flags.replaceChildren(); list.replaceChildren();
+      for (const [v, label] of [[false, "하나만 고르기"], [true, "여러 개 고르기"]]) { const b = el("button", f.multi === v ? "on" : "", label); b.type = "button"; b.onclick = () => { f.multi = v; draw(); }; kind.append(b); }
+      const ib = el("button", f.iceOnly ? "on" : "", "🧊 ICE 고를 때만 보이기"); ib.type = "button"; ib.onclick = () => { f.iceOnly = !f.iceOnly; draw(); }; flags.append(ib);
+      f.choices.forEach((c, i) => {
+        const row = el("div", "form-row");
+        if (!f.multi) {
+          const d = el("button", "mini" + (f.def === i ? " on" : ""), f.def === i ? "기본" : "○"); d.type = "button"; d.title = "처음에 골라져 있는 것";
+          if (f.def === i) d.style.background = "var(--good)";
+          d.onclick = () => { f.def = i; draw(); };
+          row.append(d);
+        }
+        const n = el("input", "field"); n.maxLength = 14; n.placeholder = `선택지 ${i + 1}`; n.value = c.n; n.oninput = () => (c.n = n.value);
+        const pr = el("input", "field"); pr.type = "number"; pr.inputMode = "numeric"; pr.placeholder = "+원"; pr.value = c.p || ""; pr.style.width = "92px"; pr.style.flexShrink = "0"; pr.oninput = () => (c.p = Math.max(0, Math.round(Number(pr.value) || 0)));
+        row.append(n, pr);
+        if (f.choices.length > 1) { const x = el("button", "mini red", "−"); x.type = "button"; x.onclick = () => { f.choices.splice(i, 1); if (f.def >= f.choices.length) f.def = 0; draw(); }; row.append(x); }
+        list.append(row);
+      });
+      if (f.choices.length < 8) { const a = el("button", "btn ghost block", "+ 선택지 추가"); a.type = "button"; a.style.height = "42px"; a.onclick = () => { f.choices.push({ n: "", p: 0 }); draw(); }; list.append(a); }
+    };
+    draw();
+    sh.append(el("div", "sec-title", "고르는 방법"), kind, flags, el("div", "sec-title", "선택지와 추가 가격 (0이면 무료)"), list);
+    const msg = el("div", "msg");
+    const save = el("button", "btn brown block", g ? "💾 저장" : "➕ 추가"); save.type = "button";
+    save.onclick = async () => {
+      f.name = name.value.trim();
+      f.choices = f.choices.map((c) => ({ n: (c.n || "").trim(), p: Number(c.p) || 0 })).filter((c) => c.n);
+      if (!f.name) { msg.textContent = "옵션 이름을 써 주세요"; return; }
+      if (!f.choices.length) { msg.textContent = "선택지를 1개 이상 써 주세요"; return; }
+      if (f.def >= f.choices.length) f.def = 0;
+      const obj = groupsObj();
+      const id = g ? g.id : "g" + Date.now().toString(36);
+      obj[id] = { name: f.name, multi: f.multi, iceOnly: f.iceOnly, def: f.def, choices: f.choices, order: g ? g.order ?? 0 : Object.keys(obj).length };
+      await window.scRemote.put("config/groups", obj);
+      closeSheet(); toast(g ? "저장했어요" : `${f.name} 옵션을 만들었어요. 📋 메뉴에서 이 옵션을 켜 주세요`, "ok");
+    };
+    sh.append(msg, save);
+    if (g) {
+      const del = el("button", "btn red block", "🗑️ 옵션 지우기"); del.type = "button";
+      let sure = false;
+      del.onclick = async () => {
+        if (!sure) { sure = true; del.textContent = "한 번 더 누르면 지워져요 (메뉴에서도 빠져요)"; return; }
+        const obj = groupsObj(); delete obj[g.id];
+        await window.scRemote.put("config/groups", obj);
+        closeSheet(); toast("지웠어요");
+      };
+      sh.append(del);
+    }
+    const no = el("button", "btn gray block", "취소"); no.type = "button"; no.onclick = closeSheet;
+    sh.append(no);
+  });
+}
+
+/* ---------- 관리자: 광고 ---------- */
+const AD_COLORS = ["#C98A3E", "#E5507A", "#6B4430", "#F5A524", "#2D8CE0", "#1E9E5A", "#8E62D9", "#2B1A10"];
+function renderAAds() {
+  const body = $("a-body");
+  body.replaceChildren();
+  const add = el("button", "btn block", "➕ 새 광고 만들기"); add.type = "button"; add.onclick = () => editAd(null);
+  body.append(add, el("div", "hint", "키오스크 첫 화면에 4.5초마다 넘어가면서 나와요. 메뉴를 연결하면 광고를 눌렀을 때 그 메뉴로 바로 가요."));
+  const list = adList();
+  if (!list.length) body.append(el("div", "hint", "광고가 없으면 첫 화면에 sol-cafe 로고가 나와요."));
+  list.forEach((a, i) => {
+    const r = el("div", "arow");
+    const pic = picEl(a.img, "ice"); pic.style.background = a.bg;
+    const txt = el("div", "txt"); txt.append(el("b", null, a.title), el("span", null, `${a.on === false ? "⏸️ 꺼짐" : "▶️ 나오는 중"}${a.menu && menu[a.menu] ? " · 🔗 " + menu[a.menu].name : ""}`));
+    r.append(pic, txt);
+    const mb = (t, fn, cls) => { const b = el("button", "mini" + (cls ? " " + cls : ""), t); b.type = "button"; b.onclick = fn; r.append(b); };
+    const obj = () => { const o = {}; for (const x of adList()) { const { id, ...rest } = x; o[id] = rest; } return o; };
+    mb("▲", () => moveItem("ads", obj(), list, i, -1));
+    mb("▼", () => moveItem("ads", obj(), list, i, 1));
+    mb(a.on === false ? "켜기" : "끄기", () => window.scRemote.patch("ads/" + a.id, { on: a.on === false }), a.on === false ? "" : "");
+    mb("✏️", () => editAd(a));
+    body.append(r);
+  });
+}
+function editAd(a) {
+  const f = a ? JSON.parse(JSON.stringify({ title: a.title, sub: a.sub || "", tag: a.tag || "", img: a.img || { type: "emoji", v: "☕" }, bg: a.bg || AD_COLORS[0], menu: a.menu || "", on: a.on !== false })) : { title: "", sub: "", tag: "NEW", img: { type: "emoji", v: "☕" }, bg: AD_COLORS[0], menu: "", on: true };
+  openSheet((sh) => {
+    sh.append(el("h3", null, a ? "✏️ 광고 고치기" : "➕ 새 광고"));
+    const prev = el("div", "ad on");
+    prev.style.cssText = "position:relative;inset:auto;height:300px;color:#fff;box-shadow:none;border-radius:22px";
+    const upd = () => {
+      prev.replaceChildren();
+      prev.style.background = f.bg;
+      if (f.tag) prev.append(el("div", "tag", f.tag));
+      const p = picEl(f.img, "ice"); p.style.width = "130px"; p.style.height = "130px"; prev.append(p);
+      prev.append(el("h2", null, f.title || "광고 제목"));
+      prev.lastChild.style.fontSize = "22px";
+      if (f.sub) prev.append(el("p", null, f.sub));
+    };
+    sh.append(prev);
+    const inp = (ph, k, max) => { const i = el("input", "field"); i.maxLength = max; i.placeholder = ph; i.value = f[k]; i.oninput = () => { f[k] = i.value; upd(); }; sh.append(i); };
+    inp("제목 (예: 오늘의 추천 ☀️ 바닐라라떼)", "title", 30);
+    inp("설명 (안 써도 돼요)", "sub", 40);
+    inp("작은 글씨 (예: NEW, TODAY, EVENT)", "tag", 10);
+    sh.append(el("div", "sec-title", "배경색"));
+    const cols = el("div", "checks");
+    const drawCols = () => { cols.replaceChildren(); for (const c of AD_COLORS) { const b = el("button"); b.type = "button"; b.style.cssText = `width:40px;height:40px;border-radius:50%;background:${c};border:3px solid ${f.bg === c ? "#2B1A10" : "transparent"}`; b.onclick = () => { f.bg = c; drawCols(); upd(); }; cols.append(b); } };
+    drawCols();
+    sh.append(cols, el("div", "sec-title", "광고 그림"), ...imagePicker(f, upd));
+    sh.append(el("div", "sec-title", "누르면 바로 갈 메뉴 (안 골라도 돼요)"));
+    const sel = el("select", "field");
+    const none = el("option", null, "연결 안 함"); none.value = ""; sel.append(none);
+    for (const m of menuList()) { const o = el("option", null, m.name); o.value = m.id; if (m.id === f.menu) o.selected = true; sel.append(o); }
+    sel.onchange = () => (f.menu = sel.value);
+    sh.append(sel);
+    const msg = el("div", "msg");
+    const save = el("button", "btn brown block", a ? "💾 저장" : "➕ 광고 추가"); save.type = "button";
+    save.onclick = async () => {
+      f.title = f.title.trim();
+      if (!f.title) { msg.textContent = "제목을 써 주세요"; return; }
+      const data = { title: f.title, sub: f.sub.trim(), tag: f.tag.trim(), img: f.img, bg: f.bg, menu: f.menu, on: f.on, order: a ? a.order ?? 0 : adList().length };
+      try {
+        if (a) await window.scRemote.put("ads/" + a.id, data); else await window.scRemote.add("ads", data);
+        closeSheet(); toast("저장했어요", "ok");
+      } catch (e) { msg.textContent = "저장하지 못했어요 (사진이 너무 크면 다른 사진으로 해 보세요)"; }
+    };
+    sh.append(msg, save);
+    if (a) {
+      const del = el("button", "btn red block", "🗑️ 광고 지우기"); del.type = "button";
+      let sure = false;
+      del.onclick = async () => { if (!sure) { sure = true; del.textContent = "한 번 더 누르면 지워져요"; return; } await window.scRemote.put("ads/" + a.id, null); closeSheet(); toast("지웠어요"); };
+      sh.append(del);
+    }
+    const no = el("button", "btn gray block", "취소"); no.type = "button"; no.onclick = closeSheet;
+    sh.append(no);
+    upd();
+  });
+}
+function renderASales() {
+  const body = $("a-body");
+  body.replaceChildren();
+  const list = todayOrders();
+  const total = list.reduce((s, o) => s + (o.total || 0), 0);
+  const cups = list.reduce((s, o) => s + (o.items || []).reduce((a, it) => a + it.qty, 0), 0);
+  const g = el("div", "stat-grid");
+  for (const [v, l] of [[won(total), "오늘 매출"], [`${list.length}건`, "주문 수"], [`${cups}개`, "판매 개수"]]) { const s = el("div", "stat"); s.append(el("b", "num", v), el("span", null, l)); g.append(s); }
+  body.append(el("div", "sec-title", `📅 오늘 (${kstDate()})`), g);
+  const by = {};
+  for (const o of list) for (const it of o.items || []) by[it.name] = (by[it.name] || 0) + it.qty;
+  const top = Object.entries(by).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  body.append(el("div", "sec-title", "🏆 많이 팔린 메뉴"));
+  const box = el("div", "link-box");
+  if (!top.length) box.append(el("div", "hint", "아직 주문이 없어요"));
+  for (const [n, q] of top) {
+    const r = el("div", "bar-row");
+    const bb = el("div", "bb"); const fill = el("div"); fill.style.width = (q / top[0][1]) * 100 + "%"; bb.append(fill);
+    r.append(el("span", "bn", n), bb, el("span", "bv num", `${q}개`));
+    box.append(r);
+  }
+  body.append(box);
+  body.append(el("div", "sec-title", "🧾 오늘 주문 기록"));
+  for (const o of list.slice().reverse()) {
+    const r = el("div", "arow");
+    const txt = el("div", "txt");
+    txt.append(el("b", null, `${o.no}번 · ${won(o.total)}`), el("span", null, `${hm(o.at)} · ${o.mode} · ${(o.items || []).map((i) => `${i.name}×${i.qty}`).join(", ")}`));
+    r.append(txt, el("span", "mini", { new: "새 주문", making: "만드는 중", done: "픽업 대기", picked: "완료" }[o.status] || o.status));
+    body.append(r);
+  }
+  const clear = el("button", "btn red block", "🗑️ 주문 기록 전부 지우기"); clear.type = "button"; clear.style.marginTop = "10px";
+  let sure = false;
+  clear.onclick = async () => { if (!sure) { sure = true; clear.textContent = "한 번 더 누르면 전부 지워져요 (매출도 0원)"; return; } await window.scRemote.put("orders", null); toast("주문 기록을 지웠어요"); renderASales(); };
+  body.append(clear);
+}
+function renderASet() {
+  const body = $("a-body");
+  body.replaceChildren();
+  const pinBox = el("div", "link-box");
+  pinBox.append(el("b", null, "🔑 관리자 비밀번호 바꾸기"));
+  const p1 = el("input", "field"); p1.type = "password"; p1.inputMode = "numeric"; p1.maxLength = 8; p1.placeholder = "새 비밀번호 (4~8자)";
+  const p2 = el("input", "field"); p2.type = "password"; p2.inputMode = "numeric"; p2.maxLength = 8; p2.placeholder = "한 번 더";
+  const ps = el("button", "btn brown block", "바꾸기"); ps.type = "button";
+  ps.onclick = async () => {
+    if (p1.value.length < 4) return toast("4자 이상으로 해 주세요", "err");
+    if (p1.value !== p2.value) return toast("두 비밀번호가 달라요", "err");
+    await window.scRemote.put("config/pinHash", await pinHash(p1.value));
+    p1.value = p2.value = ""; toast("비밀번호를 바꿨어요 🔑", "ok");
+  };
+  pinBox.append(p1, p2, ps);
+  body.append(pinBox);
+  const links = el("div", "link-box");
+  links.append(el("b", null, "📱 다른 화면 바로 가기"), el("div", "hint", "누르면 새 창으로 바로 열려요. 다른 기기로 보낼 땐 📤 보내기를 눌러요."));
+  for (const [label, q] of [["🧾 키오스크 (손님 주문)", ""], ["☕ 바리스타 (주문 받기)", "?barista"], ["📺 픽업 전광판", "?board"]]) {
+    const url = SITE + q;
+    const row = el("div", "form-row");
+    const go = el("a", "btn ghost", label); go.href = url; go.target = "_blank"; go.rel = "noopener"; go.style.flex = "1"; go.style.textDecoration = "none"; go.style.height = "48px"; go.style.fontSize = "15px";
+    const send = el("button", "btn brown", "📤"); send.type = "button"; send.style.height = "48px"; send.title = "보내기 / 복사";
+    send.onclick = async () => {
+      try { if (navigator.share) { await navigator.share({ title: "sol-cafe " + label, url }); return; } } catch (e) { if (e && e.name === "AbortError") return; }
+      try { await navigator.clipboard.writeText(url); toast("주소를 복사했어요 📋", "ok"); } catch (e) { toast(url); }
+    };
+    row.append(go, send);
+    links.append(row);
+  }
+  body.append(links);
+  const reset = el("div", "link-box");
+  reset.append(el("b", null, "🔄 처음 샘플로 되돌리기"), el("div", "hint", "메뉴, 카테고리, 옵션, 광고를 전부 지우고 처음 샘플로 바꿔요."));
+  const rb = el("button", "btn red block", "샘플 메뉴로 되돌리기"); rb.type = "button";
+  let sure = false;
+  rb.onclick = async () => { if (!sure) { sure = true; rb.textContent = "한 번 더 누르면 바뀌어요"; return; } await Promise.all([window.scRemote.put("menu", sampleMenu()), window.scRemote.put("ads", SAMPLE_ADS), window.scRemote.put("config/cats", DEF_CATS), window.scRemote.put("config/groups", DEF_GROUPS)]); toast("샘플로 바꿨어요", "ok"); sure = false; rb.textContent = "샘플 메뉴로 되돌리기"; };
+  reset.append(rb);
+  body.append(reset);
+}
+
+/* =====================================================================
+   시작
+   ===================================================================== */
+function waitRemote(timeout = 6000) {
+  return new Promise((res) => {
+    if (window.scRemote) return res(true);
+    const t = setTimeout(() => res(false), timeout);
+    addEventListener("scremote-ready", () => { clearTimeout(t); res(true); }, { once: true });
+  });
+}
+function soundGate(text) {
+  const g = el("div", "sound-gate");
+  g.append(el("div", null, "🔔"), el("b", null, text), el("div", "hint", "브라우저는 화면을 한 번 눌러야 소리를 낼 수 있어요"));
+  g.firstChild.style.fontSize = "70px";
+  g.lastChild.style.color = "rgba(255,255,255,0.7)";
+  const b = el("button", "btn", "🔊 소리 켜고 시작"); b.type = "button";
+  b.onclick = () => { soundOn = true; audio(); beep("ding"); if ($("b-sound")) { $("b-sound").textContent = "🔔 소리 켜짐"; $("b-sound").classList.add("on"); } try { speechSynthesis.speak(new SpeechSynthesisUtterance("")); } catch (e) { /* 괜찮음 */ } g.remove(); };
+  const no = el("button", "btn gray", "소리 없이 시작"); no.type = "button"; no.onclick = () => g.remove();
+  g.append(b, no);
+  document.body.append(g);
+}
+(async () => {
+  if (MODE === "barista") { show("barista"); soundGate("바리스타 화면"); }
+  else if (MODE === "board") { show("board"); boardClock(); setInterval(boardClock, 10000); soundGate("픽업 전광판"); }
+  else goStart();
+  if (!(await waitRemote())) { toast("서버에 연결하지 못했어요. 인터넷을 확인해 주세요", "err"); return; }
+  let menuLoaded = false;
+  window.scRemote.listen("menu", (v) => {
+    if (v === undefined) return;
+    if (v === null && !menuLoaded) { window.scRemote.put("menu", sampleMenu()); window.scRemote.put("ads", SAMPLE_ADS); window.scRemote.put("config/adsSeeded", true); menuLoaded = true; return; } // 처음엔 샘플 메뉴·광고
+    menuLoaded = true;
+    menu = v || {};
+    if (!$("menu").classList.contains("hidden")) { renderMenu(); }
+    if (!$("admin").classList.contains("hidden") && aTab === "menu") renderAMenu();
+    if (!$("start").classList.contains("hidden") && !$("ad-wrap").classList.contains("hidden")) renderAds();
+  });
+  let configLoaded = false;
+  window.scRemote.listen("config", (v) => {
+    if (v === undefined) return;
+    config = v || {};
+    configLoaded = true;
+    if (!$("menu").classList.contains("hidden")) { renderCats(); renderMenu(); }
+    if (!$("admin").classList.contains("hidden") && ["cats", "opts", "menu"].includes(aTab)) setATab(aTab);
+  });
+  window.scRemote.listen("ads", (v) => {
+    if (v === undefined) return;
+    ads = v || {};
+    // 예전 버전에서 넘어왔으면 샘플 광고를 한 번 넣어 줘요 (일부러 다 지운 건 그대로)
+    if (v === null) setTimeout(() => { if (configLoaded && !config.adsSeeded && !Object.keys(ads).length) { window.scRemote.put("ads", SAMPLE_ADS); window.scRemote.put("config/adsSeeded", true); } }, 1200);
+    if (!$("start").classList.contains("hidden") && !$("ad-wrap").classList.contains("hidden")) renderAds();
+    if (!$("admin").classList.contains("hidden") && aTab === "ads") renderAAds();
+  });
+  window.scRemote.listen("orders", (v) => {
+    if (v === undefined) return;
+    orders = v || {};
+    if (MODE === "barista" && !$("barista").classList.contains("hidden")) renderBarista();
+    if (MODE === "board") renderBoard();
+    if (!$("admin").classList.contains("hidden") && aTab === "sales") renderASales();
+  });
+  if (MODE === "barista") setInterval(() => { if (!$("barista").classList.contains("hidden")) renderBarista(); }, 30000);
+})();
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
